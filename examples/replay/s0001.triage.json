@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {
+      "candidate_id": "f-ef9fb2f245cfd2d2",
+      "verdict": "rejected",
+      "rationale": "The preceding guard rejects length 0 and any length above sizeof(buf). The proposed write overflow is contradicted by the supplied code. Other input validity assumptions are outside this specific hypothesis."
+    }
+  ]
+}

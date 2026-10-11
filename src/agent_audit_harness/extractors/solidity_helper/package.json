@@ -1,0 +1,8 @@
+{
+  "name": "audit-solidity-extractor",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "solc": "0.8.30"
+  }
+}

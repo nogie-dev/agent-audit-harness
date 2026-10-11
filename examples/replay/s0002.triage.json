@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {
+      "candidate_id": "f-76b114e43eab8f7f",
+      "verdict": "needs_validation",
+      "rationale": "There is no local destination-length guard in this synthetic function. A boundary test is justified, but neither a caller nor a deployed entry point is present. No test has been executed and the finding remains unconfirmed."
+    }
+  ]
+}

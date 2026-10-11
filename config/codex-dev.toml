@@ -1,0 +1,10 @@
+# Repository development defaults; runtime research calls use their own restrictions.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "disabled"
+
+[sandbox_workspace_write]
+network_access = false
+
+[features]
+multi_agent = false

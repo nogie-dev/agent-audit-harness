@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "raw-command",
+      "question": "Can a query value select an executable without an allowlist on the Raw path?",
+      "entry": "audit.example/review/web.Raw",
+      "assumptions": [
+        "Register is invoked by the host; listener and deployment are not shown."
+      ],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/review/web.Raw",
+          "claim": "HTTP query value is read here.",
+          "evidence": {
+            "path": "web/handlers.go",
+            "line": 10,
+            "quote": "req := model.Request{Program: r.URL.Query().Get(\"program\")}"
+          }
+        },
+        {
+          "role": "sink",
+          "function": "audit.example/review/runner.Execute",
+          "claim": "Executable selection is a sensitive operation.",
+          "evidence": {
+            "path": "runner/execute.go",
+            "line": 6,
+            "quote": "_ = exec.Command(program).Run()"
+          }
+        }
+      ]
+    },
+    {
+      "id": "checked-command",
+      "question": "Does the Checked path constrain the query before executable selection?",
+      "entry": "audit.example/review/web.Checked",
+      "assumptions": [
+        "Deployment and command search environment are not modeled."
+      ],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/review/web.Checked",
+          "claim": "HTTP query value is read here.",
+          "evidence": {
+            "path": "web/handlers.go",
+            "line": 15,
+            "quote": "req := model.Request{Program: r.URL.Query().Get(\"program\")}"
+          }
+        },
+        {
+          "role": "barrier_candidate",
+          "function": "audit.example/review/service.Checked",
+          "claim": "Check the branch and allowlist implementation.",
+          "evidence": {
+            "path": "service/flow.go",
+            "line": 13,
+            "quote": "if !allowed(req.Program) {"
+          }
+        },
+        {
+          "role": "barrier_candidate",
+          "function": "audit.example/review/service.allowed",
+          "claim": "The helper compares the value to a literal.",
+          "evidence": {
+            "path": "service/flow.go",
+            "line": 20,
+            "quote": "return program == \"date\""
+          }
+        },
+        {
+          "role": "sink",
+          "function": "audit.example/review/runner.Execute",
+          "claim": "Executable selection is a sensitive operation.",
+          "evidence": {
+            "path": "runner/execute.go",
+            "line": 6,
+            "quote": "_ = exec.Command(program).Run()"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dynamic-boundary",
+      "question": "What behavior is hidden behind Engine and callback dispatch?",
+      "entry": "audit.example/review/web.Dynamic",
+      "assumptions": [
+        "Concrete engine and callback bindings are not supplied."
+      ],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/review/web.Dynamic",
+          "claim": "HTTP query value is read here.",
+          "evidence": {
+            "path": "web/handlers.go",
+            "line": 23,
+            "quote": "req := model.Request{Program: r.URL.Query().Get(\"program\")}"
+          }
+        },
+        {
+          "role": "boundary",
+          "function": "audit.example/review/service.Dynamic",
+          "claim": "The interface target remains unresolved.",
+          "evidence": {
+            "path": "service/flow.go",
+            "line": 28,
+            "quote": "engine.Run(req)"
+          }
+        },
+        {
+          "role": "boundary",
+          "function": "audit.example/review/service.Dynamic",
+          "claim": "The function value target remains unresolved.",
+          "evidence": {
+            "path": "service/flow.go",
+            "line": 29,
+            "quote": "callback(req)"
+          }
+        }
+      ]
+    }
+  ]
+}

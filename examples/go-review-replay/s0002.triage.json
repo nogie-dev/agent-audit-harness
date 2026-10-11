@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {
+      "candidate_id": "f-ad335edbaa3c13ac",
+      "verdict": "rejected",
+      "rationale": "Checked returns unless allowed succeeds; allowed only accepts date. This rejects the unchecked-dispatch hypothesis, not every issue in the component."
+    }
+  ]
+}

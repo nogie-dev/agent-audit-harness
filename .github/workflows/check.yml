@@ -1,0 +1,42 @@
+name: offline-checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install uv
+        run: python3 -m pip install uv==0.12.5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: '1.25.1'
+          cache: false
+      - name: Install locked environment
+        run: make setup
+      - name: Prepare pinned Go extractor dependencies
+        run: make setup-go
+      - name: Prepare pinned Solidity compiler
+        run: make setup-solidity
+      - name: Lint, format and tests
+        run: make check
+      - name: Replay workflow
+        run: make demo
+      - name: Compiler call structure
+        run: make demo-graph
+      - name: Go call structure
+        run: make demo-go
+      - name: Go graph, recon and relationship-based replay
+        run: make demo-review
+      - name: Solidity call structure
+        run: make demo-solidity

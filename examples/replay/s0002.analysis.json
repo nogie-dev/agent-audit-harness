@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "parser.c",
+      "line": 6,
+      "cwe": "CWE-787",
+      "title": "Fixture hypothesis: unchecked copy into a fixed buffer",
+      "reasoning": "The slice copies length bytes into a 16-byte stack array without a local bound. No caller is supplied, so external control and production reachability remain unknown. This is a hypothesis requiring validation.",
+      "quote": "memcpy(buf, data, length);",
+      "validation_plan": "In a disposable worker, compare a boundary length of 16 with length 17 using a valid input buffer and AddressSanitizer. Record the build flags and result; establish a real entry point separately."
+    }
+  ]
+}

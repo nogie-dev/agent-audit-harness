@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidates"],
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "line", "cwe", "title", "reasoning", "quote", "validation_plan"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "line": {"type": "integer", "minimum": 1},
+          "cwe": {"type": "string", "pattern": "^CWE-[1-9][0-9]*$"},
+          "title": {"type": "string", "minLength": 1, "maxLength": 200},
+          "reasoning": {"type": "string", "minLength": 1, "maxLength": 3000},
+          "quote": {"type": "string", "minLength": 1, "maxLength": 1000},
+          "validation_plan": {"type": "string", "minLength": 1, "maxLength": 2000}
+        }
+      }
+    }
+  }
+}

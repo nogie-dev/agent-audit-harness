@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {
+      "candidate_id": "f-4d21d231eba940b2",
+      "verdict": "uncertain",
+      "rationale": "Interface and callback calls remain unresolved. Obtain binding evidence before claiming an unsafe operation."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {
+      "candidate_id": "f-4417c36bda58e870",
+      "verdict": "needs_validation",
+      "rationale": "No allowlist is shown on this path. Validate deployment and executable selection in an isolated worker."
+    }
+  ]
+}

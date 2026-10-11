@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "service/flow.go",
+      "line": 16,
+      "quote": "runner.Execute(req.Program)",
+      "cwe": "CWE-78",
+      "title": "Possible unchecked dispatch on Checked path",
+      "reasoning": "Check whether the query reaches the executable operation without a restriction.",
+      "validation_plan": "Use a separately isolated regression worker after supplying missing prerequisites."
+    }
+  ]
+}
