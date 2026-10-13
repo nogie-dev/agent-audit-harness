@@ -4,6 +4,40 @@
   "additionalProperties": false,
   "required": ["candidates"],
   "properties": {
+    "model_proposals": {
+      "type": "array", "minItems": 1, "maxItems": 4,
+      "items": {"$ref": "#/$defs/model"}
+    },
+    "requests": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["operation", "selector", "reason"],
+            "properties": {
+              "operation": {"enum": ["resolve", "reachable"]},
+              "selector": {"type": "string", "minLength": 1, "maxLength": 1024},
+              "reason": {"type": "string", "minLength": 1, "maxLength": 1000}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["operation", "path", "first_line", "last_line", "reason"],
+            "properties": {
+              "operation": {"const": "source"},
+              "path": {"type": "string", "minLength": 1, "maxLength": 1024},
+              "first_line": {"type": "integer", "minimum": 1},
+              "last_line": {"type": "integer", "minimum": 1},
+              "reason": {"type": "string", "minLength": 1, "maxLength": 1000}
+            }
+          }
+        ]
+      }
+    },
     "candidates": {
       "type": "array",
       "maxItems": 8,
@@ -20,6 +54,38 @@
           "quote": {"type": "string", "minLength": 1, "maxLength": 1000},
           "validation_plan": {"type": "string", "minLength": 1, "maxLength": 2000}
         }
+      }
+    }
+  },
+  "$defs": {
+    "model_evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "line", "column", "quote"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "line": {"type": "integer", "minimum": 1},
+        "column": {"type": "integer", "minimum": 1},
+        "quote": {"type": "string", "minLength": 1, "maxLength": 3000}
+      }
+    },
+    "endpoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["function_id", "evidence", "rationale"],
+      "properties": {
+        "function_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "evidence": {"$ref": "#/$defs/model_evidence"},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 2000}
+      }
+    },
+    "model": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "cwe", "source", "sink", "assumptions"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,47}$"},
+        "cwe": {"type": "string", "pattern": "^CWE-[1-9][0-9]*$"},
+        "source": {"$ref": "#/$defs/endpoint"},
+        "sink": {"$ref": "#/$defs/endpoint"},
+        "assumptions": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"type": "string", "minLength": 1, "maxLength": 2000}}
       }
     }
   }

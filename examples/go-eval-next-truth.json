@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "request-selected-export",
+      "path": "storage/files.go",
+      "line": 6,
+      "quote": "os.ReadFile(key)",
+      "cwe": "CWE-73",
+      "expected": "positive",
+      "rationale": "The representative site is the file-opening operation controlled by the request-derived key; runtime exposure remains unverified."
+    },
+    {
+      "id": "fixed-notice-control",
+      "path": "storage/files.go",
+      "line": 10,
+      "quote": "os.ReadFile(\"notice.txt\")",
+      "cwe": "CWE-73",
+      "expected": "negative",
+      "rationale": "The file-opening operation uses a fixed literal despite an unrelated request parameter."
+    }
+  ]
+}

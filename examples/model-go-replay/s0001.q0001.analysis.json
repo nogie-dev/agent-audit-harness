@@ -1,0 +1,32 @@
+{
+  "candidates": [],
+  "model_proposals": [
+    {
+      "assumptions": [
+        "Wrapper semantics and attacker exposure need independent verification."
+      ],
+      "cwe": "CWE-78",
+      "id": "wrapper-command",
+      "sink": {
+        "evidence": {
+          "column": 1,
+          "line": 5,
+          "path": "command/send.go",
+          "quote": "func Send(value string) { _ = exec.Command(\"sh\", \"-c\", value) }"
+        },
+        "function_id": "86bc47e46014274076a80b046c038c227a54bbf20df5a421726162f396f8dabb",
+        "rationale": "The supplied wrapper forwards a value into shell execution or preparation."
+      },
+      "source": {
+        "evidence": {
+          "column": 1,
+          "line": 5,
+          "path": "protocol/read.go",
+          "quote": "func ReadField() string { return os.Getenv(\"AUDIT_REQUEST\") }"
+        },
+        "function_id": "25686ff5473d12108640ea3c0378f00a8d7575c519959fe1beaa111e5208e57e",
+        "rationale": "The supplied wrapper returns declared input."
+      }
+    }
+  ]
+}

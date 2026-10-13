@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-78",
+      "line": 10,
+      "path": "client/entry.go",
+      "quote": "command.Send(value)",
+      "reasoning": "The second pass reports a caller-local flow under declared return and whole-call models. Wrapper semantics, actual exposure and effect remain unproven. Structural calls are not cross-function taint proof.",
+      "title": "Declared wrapper vocabulary surfaces a local flow",
+      "validation_plan": "Use a separately reviewed isolated harness to observe the normal entry and sink value. Compare a controlled fix and a positive control; never execute this prose."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "groups": [
+    {
+      "decisions": [
+        {
+          "candidate_id": "f-dc5e03bdcaee9d4d",
+          "counterevidence": [],
+          "rationale": "Source checks do not establish actual runtime isolation.",
+          "unresolved": [
+            {
+              "claim": "Observe the sandbox settings and runtime checks.",
+              "evidence": null
+            }
+          ],
+          "verdict": "uncertain"
+        }
+      ],
+      "root_cause": null
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "bounded-copy-control",
+      "path": "bounded.c",
+      "line": 8,
+      "quote": "memcpy(buf, data, length);",
+      "cwe": "CWE-787",
+      "expected": "negative",
+      "rationale": "The preceding branch rejects zero and lengths greater than the destination size; this label concerns the local copy bound only."
+    },
+    {
+      "id": "unchecked-copy-hypothesis",
+      "path": "parser.c",
+      "line": 6,
+      "quote": "memcpy(buf, data, length);",
+      "cwe": "CWE-787",
+      "expected": "positive",
+      "rationale": "No local bound constrains length at the fixed-size destination; reachability and external control remain unproven."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "local-shell-flow",
+      "entry": "entry.raw",
+      "question": "Does the analyzer report input reaching the shell sink, and what remains unproven?",
+      "assumptions": ["This is a static fixture; attacker exposure and runtime behavior are not verified."],
+      "annotations": []
+    }
+  ]
+}

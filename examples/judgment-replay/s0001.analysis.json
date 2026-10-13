@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-862",
+      "line": 5,
+      "path": "app.sh",
+      "quote": "printf 'DATA private-record\\n'",
+      "reasoning": "The CLI dispatch reaches an unguarded private-record response.",
+      "title": "Guest can read a synthetic private record",
+      "validation_plan": "Use the frozen guest-request probe in the isolated worker, then compare a declared authorization change."
+    }
+  ]
+}

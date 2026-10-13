@@ -76,6 +76,89 @@ def test_interface_and_function_values_do_not_invent_edges(tmp_path):
 
 
 @requires_go
+def test_go_direct_argument_transfer_across_files_and_packages(tmp_path):
+    target = tmp_path / "target"
+    shutil.copytree(
+        Path(__file__).resolve().parents[1] / "examples/model-eval-prospective-go-target", target
+    )
+    with (target / "web/handlers.go").open("a") as stream:
+        stream.write('\nfunc Constant() { _, _ = store.ReadSelected("public.txt") }\n')
+    graph = build_graph(target, tmp_path / "graph")
+    by_name = {f["id"]: f for f in graph["functions"]}
+    transfers = {
+        by_name[call["caller"]]["name"]: call["metadata"]["argument_transfers"]
+        for call in graph["calls"]
+        if call["callee_name"].endswith("store.ReadSelected")
+    }
+    selected = transfers["Selected"][0]
+    assert selected == {
+        "argument_index": 0,
+        "parameter_index": 0,
+        "parameter_name": "name",
+        "parameter_type": "string",
+        "path": "web/handlers.go",
+        "line": 11,
+        "column": 34,
+        "end_line": 11,
+        "end_column": 38,
+        "expression": "name",
+        "kind": "identifier",
+        "source_sha256": next(
+            source["sha256"]
+            for source in graph["source_index"]
+            if source["path"] == "web/handlers.go"
+        ),
+    }
+    assert transfers["Constant"][0]["expression"] == '"public.txt"'
+    assert transfers["Constant"][0]["kind"] == "constant"
+    calls = {call["id"]: call for call in graph["calls"]}
+    selected_call = next(
+        call
+        for call in calls.values()
+        if by_name[call["caller"]]["name"] == "Selected"
+        and call["callee_name"].endswith("store.ReadSelected")
+    )
+    source_origin = selected_call["metadata"]["argument_origins"][0]
+    assert source_origin["kind"] == "call_result"
+    assert (source_origin["path"], source_origin["line"]) == ("web/handlers.go", 10)
+    sink_call = next(
+        call
+        for call in calls.values()
+        if call["callee_name"] == "os.ReadFile" and call["line"] == 6
+    )
+    assert sink_call["metadata"]["argument_origins"] == [
+        {"argument_index": 0, "kind": "parameter", "parameter_index": 0}
+    ]
+    assert all(
+        not call.get("metadata", {}).get("argument_transfers")
+        for call in graph["calls"]
+        if call["status"] != "resolved" or call["dispatch"] != "direct"
+    )
+    assert read_graph(tmp_path / "graph/graph.json") == graph
+    edited = copy.deepcopy(graph)
+    changed = next(
+        call for call in edited["calls"] if call.get("metadata", {}).get("argument_transfers")
+    )
+    changed["metadata"]["argument_transfers"][0]["source_sha256"] = "0" * 64
+    edited["identity_sha256"] = digest(
+        {key: value for key, value in edited.items() if key != "identity_sha256"}
+    )
+    altered = tmp_path / "altered.json"
+    altered.write_text(json.dumps(edited))
+    with pytest.raises(ValueError, match="argument transfer"):
+        read_graph(altered)
+    edited = copy.deepcopy(graph)
+    changed = next(call for call in edited["calls"] if call["id"] == selected_call["id"])
+    changed["metadata"]["argument_origins"][0]["end_column"] += 1
+    edited["identity_sha256"] = digest(
+        {key: value for key, value in edited.items() if key != "identity_sha256"}
+    )
+    altered.write_text(json.dumps(edited))
+    with pytest.raises(ValueError, match="argument origin"):
+        read_graph(altered)
+
+
+@requires_go
 def test_generics_methods_literals_shadowing_and_execution_kinds(tmp_path):
     target = tmp_path / "target"
     target.mkdir()

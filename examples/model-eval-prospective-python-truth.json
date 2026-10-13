@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "caller-selected-file",
+      "path": "reader.py",
+      "line": 5,
+      "quote": "Path(name).read_text()",
+      "cwe": "CWE-73",
+      "expected": "positive",
+      "rationale": "The selected API forwards its filename argument across a module boundary to an unrestricted read; actual caller control and permissions are unverified.",
+      "accepted_locations": [
+        {
+          "path": "api.py",
+          "line": 5,
+          "quote": "read_selected(name)",
+          "cwe": "CWE-73",
+          "rationale": "This call forwards the supplied filename to the reader."
+        }
+      ]
+    },
+    {
+      "id": "fixed-public-file",
+      "path": "reader.py",
+      "line": 9,
+      "quote": "Path(\"public.txt\").read_text()",
+      "cwe": "CWE-73",
+      "expected": "negative",
+      "rationale": "The public API ignores its argument and this reader uses a fixed literal filename.",
+      "accepted_locations": [
+        {
+          "path": "api.py",
+          "line": 9,
+          "quote": "read_public()",
+          "cwe": "CWE-73",
+          "rationale": "This call does not forward the supplied name to the reader."
+        }
+      ]
+    }
+  ]
+}

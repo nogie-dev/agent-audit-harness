@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "env-command-construction",
+      "entry": "audit.example/commandcase/entry.Run",
+      "question": "Does an environment-selected job reach a shell command constructor across packages?",
+      "assumptions": ["Environment control and eventual command execution are not shown by this source."],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/commandcase/entry.Run",
+          "claim": "The JOB environment value enters this source path.",
+          "evidence": {"path": "entry/request.go", "line": 10, "quote": "os.Getenv(\"JOB\")"}
+        },
+        {
+          "role": "sink",
+          "function": "audit.example/commandcase/runner.Build",
+          "claim": "A caller-supplied value becomes the shell command string.",
+          "evidence": {"path": "runner/runner.go", "line": 6, "quote": "exec.Command(\"sh\", \"-c\", value)"}
+        }
+      ]
+    },
+    {
+      "id": "fixed-shell-control",
+      "entry": "audit.example/commandcase/entry.Probe",
+      "question": "Does the environment value influence the fixed shell command string?",
+      "assumptions": ["The fixed literal is a negative control; construction alone is not execution."],
+      "annotations": []
+    }
+  ]
+}

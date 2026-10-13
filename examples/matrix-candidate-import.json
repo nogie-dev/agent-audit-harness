@@ -1,0 +1,80 @@
+{
+  "analysis": {
+    "candidates": [
+      {
+        "cwe": "CWE-862",
+        "line": 22,
+        "path": "app.c",
+        "quote": "puts(\"DATA private-record\");",
+        "reasoning": "The release build has no authorization guard; applicability depends on actual build settings.",
+        "title": "Guest can read a synthetic private record",
+        "validation_plan": "Use the frozen guest-request probe in the isolated worker, then compare a declared authorization change."
+      }
+    ]
+  },
+  "fragments": [
+    {
+      "first_line": 1,
+      "last_line": 30,
+      "path": "app.c",
+      "sha256": "4c61236050c941832f6dbe61dd2726b74b184739be1f0e6ab3bc5bded8b246c6"
+    }
+  ],
+  "gaps": [
+    {
+      "evidence": null,
+      "id": "external-runtime-boundary",
+      "reason": "The external report does not establish actual CLI entrypoint execution."
+    }
+  ],
+  "schema_version": 1,
+  "source_index_sha256": "a859cb403f18c744ee57679c4dbba8cf1053359899c7376c067727236d0592fe",
+  "triage": {
+    "groups": [
+      {
+        "decisions": [
+          {
+            "candidate_id": "f-7d72725d4bf39b4b",
+            "counterevidence": [],
+            "rationale": "Source evidence requires runtime request and fix comparison evidence.",
+            "unresolved": [
+              {
+                "claim": "Runtime request reachability must be observed.",
+                "evidence": null
+              },
+              {
+                "claim": "The authorization change needs a before/after comparison.",
+                "evidence": null
+              },
+              {
+                "claim": "Effective build settings must be observed for each comparison.",
+                "evidence": null
+              }
+            ],
+            "verdict": "uncertain"
+          }
+        ],
+        "root_cause": {
+          "description": "Guest access must be denied before producing the record.",
+          "evidence": {
+            "column": 5,
+            "line": 22,
+            "path": "app.c",
+            "quote": "puts(\"DATA private-record\");"
+          },
+          "fix": {
+            "description": "Reject non-admin requests before the response.",
+            "evidence": {
+              "column": 5,
+              "line": 22,
+              "path": "app.c",
+              "quote": "puts(\"DATA private-record\");"
+            },
+            "strategy": "enforce-authorization"
+          },
+          "invariant": "guest-cannot-read-private-record"
+        }
+      }
+    ]
+  }
+}

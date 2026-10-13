@@ -1,9 +1,40 @@
 {
-  "decisions": [
+  "groups": [
     {
-      "candidate_id": "f-4417c36bda58e870",
-      "verdict": "needs_validation",
-      "rationale": "No allowlist is shown on this path. Validate deployment and executable selection in an isolated worker."
+      "root_cause": {
+        "invariant": "executable-selection-must-be-restricted",
+        "description": "The shared executor accepts an arbitrary program; entry-path controls need separate judgment.",
+        "evidence": {
+          "path": "runner/execute.go",
+          "line": 6,
+          "column": 6,
+          "quote": "exec.Command(program)"
+        },
+        "fix": {
+          "strategy": "allowlist-executable",
+          "description": "Restrict executable selection at the shared executor boundary.",
+          "evidence": {
+            "path": "runner/execute.go",
+            "line": 6,
+            "column": 6,
+            "quote": "exec.Command(program)"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-4417c36bda58e870",
+          "verdict": "needs_validation",
+          "rationale": "No allowlist is shown on this path. Validate deployment and executable selection in an isolated worker.",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "Deployment exposure and available executables still require validation.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }

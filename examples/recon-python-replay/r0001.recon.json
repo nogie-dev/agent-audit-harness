@@ -1,0 +1,32 @@
+{
+  "hypotheses": [
+    {
+      "id": "local-shell-flow",
+      "entry": "8e403aee3a6e65665f79913a",
+      "question": "Does the analyzer report input reaching the shell sink, and what remains unproven?",
+      "assumptions": [
+        "This is a static fixture; attacker exposure and runtime behavior are not verified."
+      ],
+      "annotations": [],
+      "selection": {
+        "priority": 1,
+        "rationale": "Prioritize the supplied local input() and os.system operations in raw. Investigate exposure and runtime semantics; other supplied source entries remain outside this selected plan.",
+        "entry_evidence": {
+          "path": "entry.py",
+          "line": 6,
+          "column": 1,
+          "quote": "def raw():"
+        },
+        "fact_ids": [
+          "rf-bc2491915236283f3fa32b50"
+        ],
+        "unresolved": [
+          "Deployment, attacker reachability and control effectiveness remain unverified."
+        ]
+      }
+    }
+  ],
+  "unresolved": [
+    "This plan covers supplied facts only; omitted and dynamic entries may remain."
+  ]
+}

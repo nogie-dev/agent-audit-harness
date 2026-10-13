@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "hypotheses": [{
+    "id": "custom-vocabulary", "entry": "entry.entry",
+    "question": "Can declared local wrapper models surface a caller-local flow while retaining unproven wrapper semantics and dispatch?",
+    "assumptions": ["This is a static fixture; target code is never imported or executed."],
+    "annotations": []
+  }]
+}

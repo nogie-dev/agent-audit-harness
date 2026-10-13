@@ -1,0 +1,165 @@
+{
+  "command": [
+    "-i",
+    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "HOME=/tmp",
+    "TMPDIR=/tmp",
+    "LANG=C",
+    "AUDIT_WORKER=1",
+    "/bin/sh",
+    "/input/check.sh"
+  ],
+  "entrypoint": [
+    "/usr/bin/env"
+  ],
+  "host": {
+    "AutoRemove": false,
+    "Binds": null,
+    "BlkioDeviceReadBps": [],
+    "BlkioDeviceReadIOps": [],
+    "BlkioDeviceWriteBps": [],
+    "BlkioDeviceWriteIOps": [],
+    "BlkioWeight": 0,
+    "BlkioWeightDevice": [],
+    "CapAdd": null,
+    "CapDrop": [
+      "ALL"
+    ],
+    "Cgroup": "",
+    "CgroupParent": "",
+    "CgroupnsMode": "private",
+    "ConsoleSize": [
+      0,
+      0
+    ],
+    "ContainerIDFile": "",
+    "CpuCount": 0,
+    "CpuPercent": 0,
+    "CpuPeriod": 0,
+    "CpuQuota": 0,
+    "CpuRealtimePeriod": 0,
+    "CpuRealtimeRuntime": 0,
+    "CpuShares": 0,
+    "CpusetCpus": "",
+    "CpusetMems": "",
+    "DeviceCgroupRules": null,
+    "DeviceRequests": null,
+    "Devices": [],
+    "Dns": [],
+    "DnsOptions": [],
+    "DnsSearch": [],
+    "ExtraHosts": null,
+    "GroupAdd": null,
+    "IOMaximumBandwidth": 0,
+    "IOMaximumIOps": 0,
+    "IpcMode": "private",
+    "Isolation": "",
+    "Links": null,
+    "LogConfig": {
+      "Config": {},
+      "Type": "none"
+    },
+    "MaskedPaths": [
+      "/proc/asound",
+      "/proc/acpi",
+      "/proc/interrupts",
+      "/proc/kcore",
+      "/proc/keys",
+      "/proc/latency_stats",
+      "/proc/timer_list",
+      "/proc/timer_stats",
+      "/proc/sched_debug",
+      "/proc/scsi",
+      "/sys/firmware",
+      "/sys/devices/virtual/powercap"
+    ],
+    "Memory": 134217728,
+    "MemoryReservation": 0,
+    "MemorySwap": 134217728,
+    "MemorySwappiness": null,
+    "Mounts": [
+      {
+        "BindOptions": {
+          "Propagation": "rprivate"
+        },
+        "ReadOnly": true,
+        "Source": "/snapshot",
+        "Target": "/input",
+        "Type": "bind"
+      }
+    ],
+    "NanoCpus": 500000000,
+    "NetworkMode": "none",
+    "OomKillDisable": false,
+    "OomScoreAdj": 0,
+    "PidMode": "",
+    "PidsLimit": 32,
+    "PortBindings": {},
+    "Privileged": false,
+    "PublishAllPorts": false,
+    "ReadonlyPaths": [
+      "/proc/bus",
+      "/proc/fs",
+      "/proc/irq",
+      "/proc/sys",
+      "/proc/sysrq-trigger"
+    ],
+    "ReadonlyRootfs": true,
+    "RestartPolicy": {
+      "MaximumRetryCount": 0,
+      "Name": "no"
+    },
+    "Runtime": "runc",
+    "SecurityOpt": [
+      "no-new-privileges=true"
+    ],
+    "ShmSize": 16777216,
+    "Tmpfs": {
+      "/tmp": "rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532,mode=1700",
+      "/work": "rw,exec,nosuid,nodev,size=16m,uid=65532,gid=65532,mode=700"
+    },
+    "UTSMode": "",
+    "Ulimits": [
+      {
+        "Hard": 0,
+        "Name": "core",
+        "Soft": 0
+      },
+      {
+        "Hard": 256,
+        "Name": "nofile",
+        "Soft": 256
+      }
+    ],
+    "UsernsMode": "",
+    "VolumeDriver": "",
+    "VolumesFrom": null
+  },
+  "image": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mounts": [
+    {
+      "Destination": "/input",
+      "Mode": "",
+      "Propagation": "rprivate",
+      "RW": false,
+      "Source": "/snapshot",
+      "Type": "bind"
+    }
+  ],
+  "state": {
+    "Running": false,
+    "ExitCode": 0,
+    "OOMKilled": false,
+    "Error": "",
+    "StartedAt": "0001-01-01T00:00:00Z",
+    "FinishedAt": "0001-01-01T00:00:00Z",
+    "Status": "created"
+  },
+  "user": "65532:65532",
+  "healthcheck": {
+    "Test": [
+      "NONE"
+    ]
+  },
+  "working_dir": "/work"
+}

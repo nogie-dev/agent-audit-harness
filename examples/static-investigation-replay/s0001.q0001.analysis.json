@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-78",
+      "line": 25,
+      "path": "entry.py",
+      "quote": "os.system(changed)",
+      "reasoning": "The supplied sink belongs to dynamic. The graph retains unresolved callback dispatch and the analyzer marks its propagation as partial. The sink alone does not establish the origin or runtime binding of changed.",
+      "title": "Shell input remains uncertain across a callback boundary",
+      "validation_plan": "In a reviewed isolated test, identify the callback implementation and compare its output at the sink; verify normal entry exposure separately."
+    }
+  ]
+}

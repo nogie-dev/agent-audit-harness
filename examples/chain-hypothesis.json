@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "sequence": ["f-d71ac5092c87347c", "f-49eb4943cfb6e5a7"],
+  "state": {
+    "name": "synthetic request state",
+    "transfer_assumption": "The first candidate's output might influence the later request role; no execution evidence yet connects them.",
+    "producer": {"path": "app.sh", "line": 5, "column": 5, "quote": "printf 'DATA private-record\\n'"},
+    "consumer": {"path": "app.sh", "line": 3, "column": 5, "quote": "role=$1"}
+  },
+  "prerequisites": [
+    {"claim": "A later request must receive a value derived from the first response.", "at": "second", "source": null}
+  ],
+  "unresolved": ["No isolated combined experiment has observed state transfer or order."],
+  "counterevidence": []
+}

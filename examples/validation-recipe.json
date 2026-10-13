@@ -1,0 +1,23 @@
+{
+  "candidate_id": "f-dc5e03bdcaee9d4d",
+  "command": [
+    "/bin/sh",
+    "/input/check.sh"
+  ],
+  "inputs": [
+    {
+      "path": "check.sh",
+      "sha256": "54b9e64119d0a05dcb49559394ede5adc9c1249dcf351343125c94b805692776"
+    }
+  ],
+  "limits": {
+    "cpus": 0.5,
+    "memory_mb": 128,
+    "output_bytes": 1048576,
+    "pids": 32,
+    "scratch_mb": 16,
+    "timeout_seconds": 10
+  },
+  "purpose": "Record containment checks for a synthetic fixture; no vulnerability promotion.",
+  "schema_version": 1
+}

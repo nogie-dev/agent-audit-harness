@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "release-a-access",
+      "entry": "Vault.sol:Vault.releaseA",
+      "question": "Can an arbitrary caller select the recipient of the full-balance transfer?",
+      "assumptions": ["Owner-only release is the declared policy for this synthetic fixture; deployment and funding are unverified."],
+      "annotations": []
+    },
+    {
+      "id": "release-b-control",
+      "entry": "Vault.sol:Vault.releaseB",
+      "question": "Does the inherited ownerOnly modifier gate this full-balance transfer?",
+      "assumptions": ["The modifier's source is available; its runtime behavior and deployment are not measured."],
+      "annotations": []
+    }
+  ]
+}

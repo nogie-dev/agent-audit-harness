@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "source_index_sha256": "cbf8874c6cff3d6870a50928e0592b75670b0397aa71a510d7b53804e974a20f",
+  "fragments": [
+    {
+      "path": "app.sh",
+      "first_line": 1,
+      "last_line": 7,
+      "sha256": "ed3dd24b590785820ed87b4e0e464841bcf2666721f0989bd984cfd53e9adfdb"
+    },
+    {
+      "path": "probe.sh",
+      "first_line": 1,
+      "last_line": 26,
+      "sha256": "880b2ce78412ed3bd7f90ca631ada9b46273fd9df71b2e53712d0cf3734310a7"
+    }
+  ],
+  "analysis": {
+    "candidates": [
+      {
+        "cwe": "CWE-862",
+        "line": 5,
+        "path": "app.sh",
+        "quote": "printf 'DATA private-record\\n'",
+        "reasoning": "The CLI dispatch reaches an unguarded private-record response.",
+        "title": "Guest can read a synthetic private record",
+        "validation_plan": "Use the frozen guest-request probe in the isolated worker, then compare a declared authorization change."
+      }
+    ]
+  },
+  "triage": {
+    "groups": [
+      {
+        "decisions": [
+          {
+            "candidate_id": "f-d71ac5092c87347c",
+            "counterevidence": [],
+            "rationale": "Source evidence requires runtime request and fix comparison evidence.",
+            "unresolved": [
+              {
+                "claim": "Runtime request reachability must be observed.",
+                "evidence": null
+              },
+              {
+                "claim": "The authorization change needs a before/after comparison.",
+                "evidence": null
+              }
+            ],
+            "verdict": "uncertain"
+          }
+        ],
+        "root_cause": {
+          "description": "Guest access must be denied before producing the record.",
+          "evidence": {
+            "column": 5,
+            "line": 5,
+            "path": "app.sh",
+            "quote": "printf 'DATA private-record\\n'"
+          },
+          "fix": {
+            "description": "Reject non-admin requests before the response.",
+            "evidence": {
+              "column": 5,
+              "line": 5,
+              "path": "app.sh",
+              "quote": "printf 'DATA private-record\\n'"
+            },
+            "strategy": "enforce-authorization"
+          },
+          "invariant": "guest-cannot-read-private-record"
+        }
+      }
+    ]
+  },
+  "gaps": [
+    {
+      "id": "external-runtime-boundary",
+      "reason": "The external report does not establish actual CLI entrypoint execution.",
+      "evidence": null
+    }
+  ]
+}

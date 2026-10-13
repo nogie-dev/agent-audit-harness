@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ..pipeline import digest, source_lines
 from .process import run_tool
+from .solidity_flow import add_modifier_flows
 
 HELPER = Path(__file__).parent / "solidity_helper"
 
@@ -82,6 +83,9 @@ def extract(target: Path, sources: list, *, compiler: str = "node", timeout: int
             "version": version,
             "helper_sha256": helper_hash.hexdigest(),
             "compiler_sha256": hashlib.sha256(soljson.read_bytes()).hexdigest(),
+            "modifier_flow_sha256": hashlib.sha256(
+                Path(__file__).with_name("solidity_flow.py").read_bytes()
+            ).hexdigest(),
         },
         "input_config": [],
         "functions": functions,
@@ -108,9 +112,9 @@ def extract(target: Path, sources: list, *, compiler: str = "node", timeout: int
             "Internal non-virtual calls and modifier applications are static dependencies.",
             "Virtual/super targets require a runtime contract; candidates are not edges.",
             "External declarations do not prove deployed contract/library implementations.",
-            "Modifier order/placeholders do not prove control flow or effective authorization.",
+            "Modifier CFGs model symbolic flow, not effective authorization or feasible paths.",
             "Function values/low-level calls remain unresolved; assembly is opaque.",
-            "Initializer execution, implicit base constructors and modifier flow are not expanded.",
+            "Initializer execution and implicit base constructors are not expanded.",
             "No bytecode, deployment, EVM execution, taint or attacker reachability analysis.",
         ],
     }
@@ -294,6 +298,11 @@ def ast_graph(parsed: dict, sources: list) -> tuple[list, list, list]:
                 ),
             },
         }
+
+    def source_text(node):
+        path, start, length = span(node)
+        return by_path[path].text.encode()[start : start + length].decode()
+
     calls = []
     for ast_id, function in functions.items():
         node = declarations[ast_id]
@@ -378,6 +387,66 @@ def ast_graph(parsed: dict, sources: list) -> tuple[list, list, list]:
             elif type_id.startswith("t_function_"):
                 status, dispatch, reason = "external", "builtin", "compiler_builtin"
             loc = location(item)
+            metadata = {
+                "ast_id": item["id"],
+                "declaration_id": target_function["id"] if target_function else None,
+                "modifier_index": modifier_indices.get(item["id"]),
+                "expression": source_text(item),
+                "call_end_line": loc["end_line"],
+                "call_end_column": loc["end_column"],
+            }
+            if status == "resolved" and dispatch == "direct":
+                arguments = item.get("arguments", [])
+                parameters = node["parameters"]["parameters"]
+                parameter_ids = {
+                    parameter["id"]: index for index, parameter in enumerate(parameters)
+                }
+                metadata["argument_origins"] = [
+                    {
+                        "argument_index": index,
+                        **(
+                            {
+                                "kind": "parameter",
+                                "parameter_index": parameter_ids[argument["referencedDeclaration"]],
+                            }
+                            if argument.get("nodeType") == "Identifier"
+                            and argument.get("referencedDeclaration") in parameter_ids
+                            else {"kind": "constant"}
+                            if argument.get("nodeType") == "Literal"
+                            else {"kind": "unknown", "reason": "unsupported_expression"}
+                        ),
+                    }
+                    for index, argument in enumerate(arguments)
+                ]
+                if item.get("names") or len(arguments) != len(target_function["parameters"]):
+                    metadata["argument_transfer_gap"] = "unsupported_signature_or_arity"
+                else:
+                    transfers = []
+                    for index, argument in enumerate(arguments):
+                        expression = source_text(argument)
+                        if len(expression.encode()) > 256:
+                            metadata["argument_transfer_gap"] = "argument_expression_outside_limit"
+                            break
+                        transfers.append(
+                            {
+                                "argument_index": index,
+                                "parameter_index": index,
+                                "parameter_name": target_function["parameters"][index]["name"],
+                                "parameter_type": target_function["parameters"][index]["type"],
+                                "kind": "identifier"
+                                if argument["nodeType"] == "Identifier"
+                                else "constant"
+                                if argument["nodeType"] == "Literal"
+                                else "expression",
+                                "expression": expression,
+                                **location(argument),
+                                "source_sha256": hashlib.sha256(
+                                    by_path[loc["path"]].text.encode()
+                                ).hexdigest(),
+                            }
+                        )
+                    else:
+                        metadata["argument_transfers"] = transfers
             calls.append(
                 {
                     "id": identity(item, "call"),
@@ -394,16 +463,11 @@ def ast_graph(parsed: dict, sources: list) -> tuple[list, list, list]:
                     "status": status,
                     "reason": reason,
                     "provenance": "solc_ast",
-                    "metadata": {
-                        "ast_id": item["id"],
-                        "declaration_id": target_function["id"] if target_function else None,
-                        "modifier_index": modifier_indices.get(item["id"]),
-                        "expression": by_path[loc["path"]]
-                        .text.encode()[span(item)[1] : span(item)[1] + span(item)[2]]
-                        .decode(),
-                    },
+                    "metadata": metadata,
                 }
             )
+
+    add_modifier_flows(functions, declarations, calls, location, source_text)
     return (
         list(functions.values()),
         calls,

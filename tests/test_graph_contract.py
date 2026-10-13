@@ -61,3 +61,47 @@ def test_trusted_tool_output_limit_and_exit_error(tmp_path, monkeypatch):
             {},
             2,
         )
+
+
+@pytest.mark.parametrize("terminated", [True, False])
+def test_signal_denial_preserves_limit_only_after_confirmed_termination(
+    tmp_path, monkeypatch, terminated
+):
+    import subprocess
+
+    class Process:
+        pid = 123
+        returncode = None
+        waits = []
+
+        def poll(self):
+            return None
+
+        def wait(self, timeout=None):
+            self.waits.append(timeout)
+            if not terminated:
+                raise subprocess.TimeoutExpired("fixture", timeout)
+            self.returncode = 0
+            return 0
+
+    process = Process()
+
+    def spawn(*args, **kwargs):
+        kwargs["stdout"].write(b"x" * 1000)
+        kwargs["stdout"].flush()
+        return process
+
+    def denied(*args):
+        raise PermissionError("fixture group signal denied")
+
+    monkeypatch.setattr("agent_audit_harness.extractors.process.MAX_TOOL_BYTES", 256)
+    monkeypatch.setattr("agent_audit_harness.extractors.process.subprocess.Popen", spawn)
+    monkeypatch.setattr("agent_audit_harness.extractors.process.os.killpg", denied)
+    if terminated:
+        with pytest.raises(ValueError, match="output exceeds"):
+            run_tool("fixture", ["unused"], tmp_path, {}, 2)
+        assert process.waits == [0.1, None]
+    else:
+        with pytest.raises(PermissionError, match="signal denied"):
+            run_tool("fixture", ["unused"], tmp_path, {}, 2)
+        assert process.waits == [0.1]

@@ -1,9 +1,26 @@
 {
-  "decisions": [
+  "groups": [
     {
-      "candidate_id": "f-ef9fb2f245cfd2d2",
-      "verdict": "rejected",
-      "rationale": "The preceding guard rejects length 0 and any length above sizeof(buf). The proposed write overflow is contradicted by the supplied code. Other input validity assumptions are outside this specific hypothesis."
+      "root_cause": null,
+      "decisions": [
+        {
+          "candidate_id": "f-ef9fb2f245cfd2d2",
+          "verdict": "rejected",
+          "rationale": "The preceding guard rejects length 0 and any length above sizeof(buf). The proposed write overflow is contradicted by the supplied code. Other input validity assumptions are outside this specific hypothesis.",
+          "counterevidence": [
+            {
+              "claim": "The guard returns before copying if length is zero or exceeds the destination.",
+              "evidence": {
+                "path": "bounded.c",
+                "line": 6,
+                "column": 5,
+                "quote": "if (length == 0 || length > sizeof(buf))\n        return -1;"
+              }
+            }
+          ],
+          "unresolved": []
+        }
+      ]
     }
   ]
 }

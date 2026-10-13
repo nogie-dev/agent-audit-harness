@@ -1,0 +1,82 @@
+{
+  "hypotheses": [
+    {
+      "id": "dynamic-boundary",
+      "question": "What behavior is hidden behind Engine and callback dispatch?",
+      "entry": "e78fed97eb396182c5db82e32c003f2eab3a446756f67f79b9ea5997e094b3c6",
+      "assumptions": [
+        "Concrete engine and callback bindings are not supplied."
+      ],
+      "annotations": [],
+      "selection": {
+        "priority": 3,
+        "rationale": "Investigate this binding-dependent path after the direct handler paths. The supplied body uses interface/callback processing whose concrete implementation is unresolved.",
+        "entry_evidence": {
+          "path": "web/handlers.go",
+          "line": 22,
+          "column": 1,
+          "quote": "func Dynamic(w http.ResponseWriter, r *http.Request) {"
+        },
+        "fact_ids": [
+          "rf-8a723ece4e886d9b7d2c2e30"
+        ],
+        "unresolved": [
+          "Deployment, attacker reachability and control effectiveness remain unverified."
+        ]
+      }
+    },
+    {
+      "id": "checked-command",
+      "question": "Does the Checked path constrain the query before executable selection?",
+      "entry": "a2c0c630138690f7387759e0b9c0daa2b56b5a45fe7f0397c5f7578d5a439828",
+      "assumptions": [
+        "Deployment and command search environment are not modeled."
+      ],
+      "annotations": [],
+      "selection": {
+        "priority": 2,
+        "rationale": "Compare this handler after Raw because it passes the same query into a different helper. The name Checked does not establish effective control; investigate its implementation in the next slice.",
+        "entry_evidence": {
+          "path": "web/handlers.go",
+          "line": 14,
+          "column": 1,
+          "quote": "func Checked(w http.ResponseWriter, r *http.Request) {"
+        },
+        "fact_ids": [
+          "rf-fdf35ed5742680cb6bbf5dfe"
+        ],
+        "unresolved": [
+          "Deployment, attacker reachability and control effectiveness remain unverified."
+        ]
+      }
+    },
+    {
+      "id": "raw-command",
+      "question": "Can a query value select an executable without an allowlist on the Raw path?",
+      "entry": "70ee1861c52a318eee41e7a90a24246bf7113df2d34ce4993c8aa4f56120a1c0",
+      "assumptions": [
+        "Register is invoked by the host; listener and deployment are not shown."
+      ],
+      "annotations": [],
+      "selection": {
+        "priority": 1,
+        "rationale": "Inspect Raw first: its supplied handler reads a program query and passes it to service.Raw. Compare Checked next; neither helper behavior nor exposure is proven by these fragments.",
+        "entry_evidence": {
+          "path": "web/handlers.go",
+          "line": 9,
+          "column": 1,
+          "quote": "func Raw(w http.ResponseWriter, r *http.Request) {"
+        },
+        "fact_ids": [
+          "rf-df842bc8ab27613c07b4bddf"
+        ],
+        "unresolved": [
+          "Deployment, attacker reachability and control effectiveness remain unverified."
+        ]
+      }
+    }
+  ],
+  "unresolved": [
+    "This plan covers supplied facts only; omitted and dynamic entries may remain."
+  ]
+}

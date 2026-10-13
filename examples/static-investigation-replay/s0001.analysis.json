@@ -1,0 +1,12 @@
+{
+  "candidates": [],
+  "requests": [
+    {
+      "operation": "source",
+      "path": "entry.py",
+      "first_line": 25,
+      "last_line": 25,
+      "reason": "Inspect a shell sink outside the initial raw hypothesis while retaining the containing function's known analysis limits."
+    }
+  ]
+}

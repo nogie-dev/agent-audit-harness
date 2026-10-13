@@ -1,0 +1,582 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "dependentRequired": {
+    "configurations": [
+      "oracle"
+    ]
+  },
+  "properties": {
+    "attachments": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 65536,
+            "minLength": 1,
+            "type": "string"
+          },
+          "path": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256",
+          "content"
+        ],
+        "type": "object"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "type": "array"
+    },
+    "candidate_id": {
+      "pattern": "^f-[0-9a-f]{16}$",
+      "type": "string"
+    },
+    "command": {
+      "items": {
+        "maxLength": 4000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "type": "array"
+    },
+    "configurations": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[a-z][a-z0-9-]{0,31}$",
+            "type": "string"
+          },
+          "invocation": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "line": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "path": {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "quote": {
+                "maxLength": 3000,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "line",
+              "column",
+              "quote"
+            ],
+            "type": "object"
+          },
+          "observation": {
+            "additionalProperties": false,
+            "properties": {
+              "line": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "pattern": "^[^\\r\\n\\u0000]+$",
+                "type": "string"
+              },
+              "stream": {
+                "enum": [
+                  "stdout",
+                  "stderr"
+                ]
+              }
+            },
+            "required": [
+              "stream",
+              "line"
+            ],
+            "type": "object"
+          },
+          "settings": {
+            "additionalProperties": {
+              "maxLength": 512,
+              "minLength": 1,
+              "pattern": "^[^\\r\\n\\u0000]+$",
+              "type": "string"
+            },
+            "maxProperties": 8,
+            "minProperties": 1,
+            "propertyNames": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "type": "object"
+          },
+          "source": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "line": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "path": {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "quote": {
+                "maxLength": 3000,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "line",
+              "column",
+              "quote"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "settings",
+          "source",
+          "invocation",
+          "observation"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "type": "array"
+    },
+    "inputs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    },
+    "limits": {
+      "additionalProperties": false,
+      "properties": {
+        "cpus": {
+          "maximum": 2,
+          "minimum": 0.25,
+          "type": "number"
+        },
+        "memory_mb": {
+          "maximum": 2048,
+          "minimum": 64,
+          "type": "integer"
+        },
+        "output_bytes": {
+          "maximum": 8388608,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "pids": {
+          "maximum": 256,
+          "minimum": 16,
+          "type": "integer"
+        },
+        "scratch_mb": {
+          "maximum": 512,
+          "minimum": 16,
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "maximum": 300,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeout_seconds",
+        "cpus",
+        "memory_mb",
+        "pids",
+        "scratch_mb",
+        "output_bytes"
+      ],
+      "type": "object"
+    },
+    "oracle": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": {
+          "additionalProperties": false,
+          "properties": {
+            "line": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^[^\\r\\n\\u0000]+$",
+              "type": "string"
+            },
+            "stream": {
+              "enum": [
+                "stdout",
+                "stderr"
+              ]
+            }
+          },
+          "required": [
+            "stream",
+            "line"
+          ],
+          "type": "object"
+        },
+        "description": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "maxLength": 3000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "invocation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "column": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "line": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "path": {
+                      "maxLength": 1000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "quote": {
+                      "maxLength": 3000,
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "line",
+                    "column",
+                    "quote"
+                  ],
+                  "type": "object"
+                },
+                "kind": {
+                  "enum": [
+                    "entrypoint",
+                    "direct_call"
+                  ]
+                },
+                "observation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "line": {
+                      "maxLength": 2000,
+                      "minLength": 1,
+                      "pattern": "^[^\\r\\n\\u0000]+$",
+                      "type": "string"
+                    },
+                    "stream": {
+                      "enum": [
+                        "stdout",
+                        "stderr"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stream",
+                    "line"
+                  ],
+                  "type": "object"
+                },
+                "source": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "column": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "line": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "path": {
+                      "maxLength": 1000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "quote": {
+                      "maxLength": 3000,
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "line",
+                    "column",
+                    "quote"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "kind",
+                "description",
+                "source",
+                "invocation",
+                "observation"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "expected_exit_codes": {
+          "items": {
+            "maximum": 125,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "harness_path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "not_reproduced": {
+          "additionalProperties": false,
+          "properties": {
+            "line": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^[^\\r\\n\\u0000]+$",
+              "type": "string"
+            },
+            "stream": {
+              "enum": [
+                "stdout",
+                "stderr"
+              ]
+            }
+          },
+          "required": [
+            "stream",
+            "line"
+          ],
+          "type": "object"
+        },
+        "reproduced": {
+          "additionalProperties": false,
+          "properties": {
+            "line": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^[^\\r\\n\\u0000]+$",
+              "type": "string"
+            },
+            "stream": {
+              "enum": [
+                "stdout",
+                "stderr"
+              ]
+            }
+          },
+          "required": [
+            "stream",
+            "line"
+          ],
+          "type": "object"
+        },
+        "resolutions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "issue_id": {
+                "pattern": "^vi-[0-9a-f]{16}$",
+                "type": "string"
+              },
+              "rationale": {
+                "maxLength": 3000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "requirement": {
+                "enum": [
+                  "reproduction",
+                  "entrypoint",
+                  "fix_comparison",
+                  "configuration"
+                ]
+              }
+            },
+            "required": [
+              "issue_id",
+              "requirement",
+              "rationale"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "source": {
+          "additionalProperties": false,
+          "properties": {
+            "column": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "line": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "path": {
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "quote": {
+              "maxLength": 3000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "line",
+            "column",
+            "quote"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "description",
+        "harness_path",
+        "source",
+        "expected_exit_codes",
+        "completed",
+        "reproduced",
+        "not_reproduced",
+        "entrypoint",
+        "resolutions"
+      ],
+      "type": "object"
+    },
+    "poc_review_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "purpose": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "replacements": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "after_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "before_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "content": {
+            "maxLength": 524288,
+            "minLength": 1,
+            "type": "string"
+          },
+          "path": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "before_sha256",
+          "after_sha256",
+          "content"
+        ],
+        "type": "object"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "purpose",
+    "inputs",
+    "command",
+    "limits"
+  ],
+  "type": "object"
+}

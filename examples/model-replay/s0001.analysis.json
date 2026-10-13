@@ -1,0 +1,15 @@
+{
+  "candidates": [],
+  "requests": [
+    {
+      "operation": "resolve",
+      "reason": "Inspect the wrapper definition before declaring target vocabulary.",
+      "selector": "readers.read_field"
+    },
+    {
+      "operation": "resolve",
+      "reason": "Inspect the wrapper definition before declaring target vocabulary.",
+      "selector": "writers.send_command"
+    }
+  ]
+}

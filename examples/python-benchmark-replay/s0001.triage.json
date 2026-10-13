@@ -1,0 +1,40 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "shell-input-must-not-select-command",
+        "description": "The fixture raw function passes its copied input to a shell command.",
+        "evidence": {
+          "path": "entry.py",
+          "line": 9,
+          "column": 5,
+          "quote": "os.system(copied)"
+        },
+        "fix": {
+          "strategy": "use-fixed-argv-without-shell",
+          "description": "Use a fixed executable and validated arguments without a shell.",
+          "evidence": {
+            "path": "entry.py",
+            "line": 9,
+            "column": 5,
+            "quote": "os.system(copied)"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-592ffe68fe90e240",
+          "rationale": "The local source supports a testable command-selection hypothesis, but no runtime entry or impact has been observed.",
+          "verdict": "needs_validation",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "Actual external exposure, execution and impact remain unverified.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

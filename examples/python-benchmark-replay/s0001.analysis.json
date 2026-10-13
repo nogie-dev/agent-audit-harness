@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-78",
+      "line": 9,
+      "path": "entry.py",
+      "quote": "os.system(copied)",
+      "reasoning": "raw assigns input() to value, copies it, then passes the copy to os.system(). This is a source-backed candidate; exposure and runtime behavior are unverified.",
+      "title": "Input may select a shell command",
+      "validation_plan": "In an isolated worker with an approved recipe, observe whether a real entrypoint sends chosen input to the shell sink; compare a controlled fix."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "env-command-construction",
+      "path": "runner/runner.go",
+      "line": 6,
+      "quote": "exec.Command(\"sh\", \"-c\", value)",
+      "cwe": "CWE-78",
+      "expected": "positive",
+      "rationale": "The representative site constructs a shell command from the value passed from os.Getenv; execution and attacker control remain unverified."
+    },
+    {
+      "id": "fixed-shell-control",
+      "path": "runner/runner.go",
+      "line": 10,
+      "quote": "exec.Command(\"sh\", \"-c\", \"echo ready\")",
+      "cwe": "CWE-78",
+      "expected": "negative",
+      "rationale": "The shell command string is a fixed literal unrelated to the observed environment value."
+    }
+  ]
+}

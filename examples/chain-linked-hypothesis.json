@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "sequence": ["f-f2e447bb953a0eb7", "f-53c292c05729a914"],
+  "state": {
+    "name": "bridge-key from the guest leak response",
+    "transfer_assumption": "The leaked token may be supplied to the separate guest redemption flaw.",
+    "producer": {"path": "app.sh", "line": 10, "column": 13, "quote": "printf 'TOKEN bridge-key\\n'"},
+    "consumer": {"path": "app.sh", "line": 14, "column": 9, "quote": "token=$3"}
+  },
+  "prerequisites": [
+    {"claim": "The guest redemption request must use the token from the first response.", "at": "second", "source": null}
+  ],
+  "unresolved": ["No combined isolated run has yet observed the token transfer and a negative control."],
+  "counterevidence": []
+}

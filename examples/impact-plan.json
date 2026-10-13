@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "threat_context": "Synthetic guest/admin CLI fixture; guest is untrusted and admin is the authorized control.",
+  "security_property": {
+    "claim": "A guest request must not receive the private record while an admin request may receive it.",
+    "source": {"path": "app.sh", "line": 5, "column": 5, "quote": "printf 'DATA private-record\\n'"}
+  },
+  "success_definition": "The reviewed setup, primitive, authorized control and guest impact stages each meet their frozen oracle in order.",
+  "failure_definition": "Any missing, conflicting or failed stage remains inconclusive; a failed control cannot establish guest impact.",
+  "unresolved": [],
+  "counterevidence": [],
+  "resolutions": [],
+  "stages": [
+    {
+      "id": "setup", "kind": "setup", "claim": "The reviewed CLI entrypoint responds under the isolated harness.",
+      "source": {"path": "app.sh", "line": 2, "column": 1, "quote": "serve_request() {"},
+      "harness_observation": {"path": "poc/probe.sh", "line": 20, "column": 5, "quote": "printf 'ORACLE setup-ready\\n'"},
+      "poc_review": "/replace/with/approved-setup", "expected_outcome": "reproduced"
+    },
+    {
+      "id": "primitive", "kind": "primitive", "claim": "Guest response contains the private record in the supplied worker.",
+      "source": {"path": "app.sh", "line": 5, "column": 5, "quote": "printf 'DATA private-record\\n'"},
+      "harness_observation": {"path": "poc/probe.sh", "line": 20, "column": 5, "quote": "printf 'ORACLE primitive-read\\n'"},
+      "poc_review": "/replace/with/approved-primitive", "expected_outcome": "reproduced"
+    },
+    {
+      "id": "control", "kind": "control", "claim": "Authorized admin request still returns the private record.",
+      "source": {"path": "app.sh", "line": 5, "column": 5, "quote": "printf 'DATA private-record\\n'"},
+      "harness_observation": {"path": "poc/impact-control-probe.sh", "line": 7, "column": 5, "quote": "printf 'ORACLE control-authorized\\n'"},
+      "poc_review": "/replace/with/approved-control", "expected_outcome": "not_reproduced"
+    },
+    {
+      "id": "impact", "kind": "impact", "claim": "The unauthorized guest response contains the exact protected record.",
+      "source": {"path": "app.sh", "line": 5, "column": 5, "quote": "printf 'DATA private-record\\n'"},
+      "harness_observation": {"path": "poc/probe.sh", "line": 20, "column": 5, "quote": "printf 'ORACLE impact-private-record\\n'"},
+      "poc_review": "/replace/with/approved-impact", "expected_outcome": "reproduced"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "candidates": [],
+  "model_proposals": [
+    {
+      "assumptions": [
+        "Wrapper semantics and attacker exposure need independent verification."
+      ],
+      "cwe": "CWE-78",
+      "id": "wrapper-command",
+      "sink": {
+        "evidence": {
+          "column": 5,
+          "line": 5,
+          "path": "writers.py",
+          "quote": "os.system(value)"
+        },
+        "function_id": "8b0a8b680c54bcc1e601ae53",
+        "rationale": "The supplied wrapper forwards a value into shell execution or preparation."
+      },
+      "source": {
+        "evidence": {
+          "column": 5,
+          "line": 2,
+          "path": "readers.py",
+          "quote": "return input()"
+        },
+        "function_id": "7ec38e6695487330b17632b4",
+        "rationale": "The supplied wrapper returns declared input."
+      }
+    }
+  ]
+}

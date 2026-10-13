@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "first_entrypoint_source": {"path": "app.sh", "line": 4, "column": 5, "quote": "printf 'ENTRY request-handler\\n'"},
+  "observations": {
+    "first_entrypoint": {"stream": "stdout", "line": "TARGET first stdout ENTRY request-handler"},
+    "producer_prefix": {"stream": "stdout", "prefix": "CHAIN producer base64 "},
+    "consumer_prefix": {"stream": "stdout", "prefix": "CHAIN consumer base64 "},
+    "control_denied": {"stream": "stdout", "line": "CHAIN control denied"}
+  },
+  "harness": {
+    "first_invocation": {"path": "poc/chain-probe.sh", "line": 2, "column": 1, "quote": "/bin/sh /input/app.sh guest > /work/first.stdout"},
+    "capture": {"path": "poc/chain-probe.sh", "line": 8, "column": 1, "quote": "state=$(/usr/bin/sed -n 's/^DATA //p' /work/first.stdout)"},
+    "producer_record": {"path": "poc/chain-probe.sh", "line": 9, "column": 1, "quote": "printf 'CHAIN producer base64 '"},
+    "consumer_record": {"path": "poc/chain-probe.sh", "line": 12, "column": 1, "quote": "printf 'CHAIN consumer base64 '"},
+    "second_invocation": {"path": "poc/chain-probe.sh", "line": 15, "column": 1, "quote": "/bin/sh /input/app.sh \"$state\" > /work/second.stdout"},
+    "control_invocation": {"path": "poc/chain-probe.sh", "line": 22, "column": 1, "quote": "/bin/sh /input/app.sh invalid-state > /work/control.stdout"},
+    "control_record": {"path": "poc/chain-probe.sh", "line": 24, "column": 5, "quote": "printf 'CHAIN control denied\\n'"}
+  },
+  "resolve_unresolved": [
+    {"index": 0, "rationale": "A reviewed combined worker must observe the first output supplied to the second invocation."}
+  ],
+  "resolve_prerequisites": [
+    {"index": 0, "rationale": "The same byte sequence must be observed on both sides of the reviewed transfer."}
+  ]
+}

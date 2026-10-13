@@ -1,0 +1,6 @@
+{
+  "after_sha256": "44d4b09d3fac7bf110e6281bad4de3236ab0e1126047052b2b6e533314ad86a6",
+  "before_sha256": "4c61236050c941832f6dbe61dd2726b74b184739be1f0e6ab3bc5bded8b246c6",
+  "content": "/* Synthetic build-setting fixture; run only through the isolated worker. */\n#include <stdio.h>\n#include <string.h>\n\n#ifndef AUDIT_GUARD\n#define AUDIT_GUARD 0\n#endif\n#ifdef __OPTIMIZE__\n#define OPTIMIZATION \"enabled\"\n#else\n#define OPTIMIZATION \"disabled\"\n#endif\n\nstatic void serve_request(const char *role) {\n    puts(\"ENTRY request-handler\");\n#if AUDIT_GUARD\n    if (strcmp(role, \"admin\") != 0) {\n        puts(\"DENIED\");\n        return;\n    }\n#endif\n    if (strcmp(role, \"admin\") != 0) { puts(\"DENIED\"); return; } puts(\"DATA private-record\");\n}\n\nint main(int argc, char **argv) {\n    printf(\"CONFIG optimization=%s guard=%d\\n\", OPTIMIZATION, AUDIT_GUARD);\n    if (argc != 2) return 2;\n    serve_request(argv[1]);\n    return 0;\n}\n",
+  "path": "app.c"
+}

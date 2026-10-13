@@ -1,0 +1,26 @@
+{
+  "groups": [
+    {
+      "decisions": [
+        {
+          "candidate_id": "f-d54a88bd7fe8fe5d",
+          "counterevidence": [],
+          "rationale": "The declared model motivates investigation but does not establish a broken control or runtime effect. Preserve first-pass gaps, model assumptions and second-pass boundaries.",
+          "unresolved": [
+            {
+              "claim": "Wrapper semantics, attacker exposure and runtime effect require independent verification.",
+              "evidence": {
+                "column": 5,
+                "line": 7,
+                "path": "entry.py",
+                "quote": "send_command(value)"
+              }
+            }
+          ],
+          "verdict": "uncertain"
+        }
+      ],
+      "root_cause": null
+    }
+  ]
+}

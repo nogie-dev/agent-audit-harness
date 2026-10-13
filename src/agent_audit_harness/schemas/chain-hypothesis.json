@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "sequence", "state", "prerequisites", "unresolved", "counterevidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "sequence": {
+      "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^f-[0-9a-f]{16}$"}
+    },
+    "state": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "transfer_assumption", "producer", "consumer"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 120},
+        "transfer_assumption": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "producer": {"$ref": "#/$defs/evidence"},
+        "consumer": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "prerequisites": {
+      "type": "array", "maxItems": 16,
+      "items": {"$ref": "#/$defs/claim"}
+    },
+    "unresolved": {
+      "type": "array", "minItems": 1, "maxItems": 32,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2000}
+    },
+    "counterevidence": {
+      "type": "array", "maxItems": 32,
+      "items": {"$ref": "#/$defs/claim"}
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "line", "column", "quote"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "line": {"type": "integer", "minimum": 1},
+        "column": {"type": "integer", "minimum": 1},
+        "quote": {"type": "string", "minLength": 1, "maxLength": 3000}
+      }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claim", "at", "source"],
+      "properties": {
+        "claim": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "at": {"enum": ["first", "second"]},
+        "source": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/evidence"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-78",
+      "line": 9,
+      "path": "entry.py",
+      "quote": "os.system(copied)",
+      "reasoning": "Semgrep reports input through value and copied into os.system within raw. Runtime binding and attacker exposure remain unverified.",
+      "title": "Input reaches a shell sink under the declared model",
+      "validation_plan": "In the future isolated worker, stub the shell sink and check whether untrusted input arrives; verify actual entry exposure separately."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "local-shell-flow",
+      "entry": "entry.raw",
+      "question": "Does the copied input select a shell command, and which runtime claims remain unproven?",
+      "assumptions": ["This is a static fixture; external exposure and runtime impact are not verified."],
+      "annotations": []
+    },
+    {
+      "id": "constant-control",
+      "entry": "entry.constant",
+      "question": "Does the read input affect the constant shell command?",
+      "assumptions": ["The call is a negative control for this input-to-command claim."],
+      "annotations": []
+    }
+  ]
+}

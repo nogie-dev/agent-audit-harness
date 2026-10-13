@@ -1,0 +1,53 @@
+{
+  "analysis": {
+    "candidates": [
+      {
+        "cwe": "CWE-78",
+        "line": 25,
+        "path": "entry.py",
+        "quote": "os.system(changed)",
+        "reasoning": "The source and callback semantics must be investigated; a sink match does not establish taint or exposure.",
+        "title": "Dynamic input reaches a declared shell sink",
+        "validation_plan": "Review normal-entrypoint inputs and an unchanged probe before any isolated experiment."
+      }
+    ]
+  },
+  "fragments": [
+    {
+      "first_line": 25,
+      "last_line": 25,
+      "path": "entry.py",
+      "sha256": "df53176e22c3cdb42ea6da27dafe0d947330ddb030edfb205a7d7c6a518cb31e"
+    }
+  ],
+  "gaps": [
+    {
+      "evidence": null,
+      "id": "scanner-missing-callback",
+      "reason": "The supplied fragment does not establish callback semantics."
+    }
+  ],
+  "schema_version": 1,
+  "source_index_sha256": "5a3d44f6a09a39ddffa4769d787109ecd8da7daa00695e3a3693d48c7cf33eaa",
+  "triage": {
+    "groups": [
+      {
+        "decisions": [
+          {
+            "candidate_id": "f-32a1926d30562060",
+            "counterevidence": [],
+            "rationale": "The fragment does not establish the callback propagation or exposed input.",
+            "unresolved": [
+              {
+                "claim": "Callback propagation and actual entrypoint reachability remain unknown.",
+                "evidence": null
+              }
+            ],
+            "verdict": "uncertain"
+          }
+        ],
+        "root_cause": null
+      }
+    ]
+  }
+}

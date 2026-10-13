@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "bounded.c",
+      "line": 8,
+      "cwe": "CWE-787",
+      "title": "Fixture false positive: length passed to memcpy",
+      "reasoning": "A deliberately noisy fixture candidate. Check the preceding guard before treating the copy as a vulnerability.",
+      "quote": "memcpy(buf, data, length);",
+      "validation_plan": "Check lengths 0, 16 and 17 with a valid input buffer."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "request-selected-file",
+      "path": "store/files.go",
+      "line": 6,
+      "quote": "os.ReadFile(name)",
+      "cwe": "CWE-73",
+      "expected": "positive",
+      "rationale": "Selected passes a query-derived name to this unrestricted file read; readable paths and live deployment remain unverified.",
+      "accepted_locations": [
+        {
+          "path": "web/handlers.go",
+          "line": 11,
+          "quote": "store.ReadSelected(name)",
+          "cwe": "CWE-73",
+          "rationale": "This call forwards the query-derived name to the cross-file read."
+        }
+      ]
+    },
+    {
+      "id": "fixed-public-file",
+      "path": "store/files.go",
+      "line": 10,
+      "quote": "os.ReadFile(\"public.txt\")",
+      "cwe": "CWE-73",
+      "expected": "negative",
+      "rationale": "The Public path ignores the request name and reads a fixed literal filename.",
+      "accepted_locations": [
+        {
+          "path": "web/handlers.go",
+          "line": 19,
+          "quote": "store.ReadPublic()",
+          "cwe": "CWE-73",
+          "rationale": "This call selects the fixed-filename reader independently of the request name."
+        }
+      ]
+    }
+  ]
+}

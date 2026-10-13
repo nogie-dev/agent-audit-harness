@@ -55,6 +55,25 @@ def graph_report(graph: dict) -> str:
             f"- `{plain(function['qualified_name'])}` — "
             f"`{plain(function['path'])}`:{function['line']} — `{function['id']}`"
         )
+    flows = [node for node in graph["functions"] if "modifier_flow" in node.get("metadata", {})]
+    if flows:
+        rows.extend(
+            [
+                "",
+                "## Modifier control flow",
+                "",
+                "Symbolic normal-exit paths; no authorization or runtime feasibility proof.",
+                "",
+            ]
+        )
+        for function in flows:
+            flow = function["metadata"]["modifier_flow"]
+            rows.append(
+                f"- `{plain(function['qualified_name'])}` — "
+                f"{len(flow['nodes'])} flow nodes; complete={flow['complete']}; "
+                f"{flow['execution_unit']} counts: {plain(flow['body_execution'])}; "
+                f"gaps: {plain(flow['gaps'])}"
+            )
     rows.extend(["", "## Unresolved calls", ""])
     for call in graph["calls"]:
         if call["status"] != "resolved":
@@ -240,6 +259,108 @@ def validate_graph(graph: dict):
             or not caller["line"] <= call["line"] <= caller["end_line"]
         ):
             raise ValueError("call location outside caller")
+        if graph["language"] in {"go", "python", "solidity"} and "call_end_line" in call.get(
+            "metadata", {}
+        ):
+            metadata = call["metadata"]
+            if (
+                type(metadata.get("call_end_line")) is not int
+                or type(metadata.get("call_end_column")) is not int
+                or not call["line"] <= metadata["call_end_line"] <= caller["end_line"]
+                or metadata["call_end_column"] < 1
+            ):
+                raise ValueError("invalid Go call range")
+        if graph["language"] in {"go", "python", "solidity"} and "argument_transfers" in call.get(
+            "metadata", {}
+        ):
+            metadata = call["metadata"]
+            transfers = metadata["argument_transfers"]
+            params = nodes[call["callee"]].get("parameters", []) if call["callee"] else []
+            if (
+                not isinstance(transfers, list)
+                or (call["status"] != "resolved" or call["dispatch"] != "direct")
+                and transfers
+                or metadata.get("argument_transfer_gap")
+                not in {
+                    None,
+                    "unsupported_signature_or_arity",
+                    "argument_expression_outside_limit",
+                    "argument_source_unavailable",
+                }
+            ):
+                raise ValueError("invalid argument transfer")
+            seen = set()
+            for transfer in transfers:
+                if not isinstance(transfer, dict):
+                    raise ValueError("invalid argument transfer")
+                index = transfer.get("argument_index")
+                if (
+                    type(index) is not int
+                    or index in seen
+                    or not 0 <= index < len(params)
+                    or transfer.get("parameter_index") != index
+                    or transfer.get("parameter_name") != params[index]["name"]
+                    or transfer.get("parameter_type") != params[index]["type"]
+                    or transfer.get("path") != call["path"]
+                    or transfer.get("source_sha256") != source_index[call["path"]]["sha256"]
+                    or type(transfer.get("line")) is not int
+                    or type(transfer.get("end_line")) is not int
+                    or not call["line"]
+                    <= transfer["line"]
+                    <= transfer["end_line"]
+                    <= caller["end_line"]
+                    or type(transfer.get("column")) is not int
+                    or type(transfer.get("end_column")) is not int
+                    or transfer["column"] < 1
+                    or transfer["end_column"] < 1
+                    or transfer.get("kind") not in {"identifier", "constant", "expression"}
+                    or not isinstance(transfer.get("expression"), str)
+                    or not 1 <= len(transfer["expression"].encode()) <= 256
+                ):
+                    raise ValueError("invalid argument transfer")
+                seen.add(index)
+        if graph["language"] in {"go", "python", "solidity"} and "argument_origins" in call.get(
+            "metadata", {}
+        ):
+            origins = call["metadata"]["argument_origins"]
+            if not isinstance(origins, list) or call["dispatch"] not in {"direct", "builtin"}:
+                raise ValueError("invalid argument origin")
+            seen = set()
+            for origin in origins:
+                if not isinstance(origin, dict):
+                    raise ValueError("invalid argument origin")
+                index, kind = origin.get("argument_index"), origin.get("kind")
+                if type(index) is not int or index < 0 or index in seen:
+                    raise ValueError("invalid argument origin")
+                seen.add(index)
+                if kind == "parameter":
+                    parameter = origin.get("parameter_index")
+                    if type(parameter) is not int or not 0 <= parameter < len(caller["parameters"]):
+                        raise ValueError("invalid argument origin")
+                elif kind == "call_result":
+                    if (
+                        origin.get("path") != call["path"]
+                        or type(origin.get("line")) is not int
+                        or type(origin.get("column")) is not int
+                        or type(origin.get("end_line")) is not int
+                        or type(origin.get("end_column")) is not int
+                        or not caller["line"] <= origin["line"] <= call["line"]
+                        or not origin["line"] <= origin["end_line"] <= caller["end_line"]
+                        or origin["column"] < 1
+                        or origin["end_column"] < 1
+                    ):
+                        raise ValueError("invalid argument origin")
+                elif kind == "unknown":
+                    if origin.get("reason") not in {
+                        "unsupported_expression",
+                        "conditional_or_prior_control",
+                        "reassigned_or_unsupported_binding",
+                        "mutable_or_unsupported_type",
+                        "address_escape_or_closure",
+                    }:
+                        raise ValueError("invalid argument origin")
+                elif kind != "constant":
+                    raise ValueError("invalid argument origin")
         if call["status"] != "resolved" and not call["reason"]:
             raise ValueError("unresolved call requires a reason")
     if summarize_calls(graph["functions"], graph["calls"]) != (
@@ -247,6 +368,37 @@ def validate_graph(graph: dict):
         graph["scope_calls"],
     ):
         raise ValueError("call summaries do not match resolved edges")
+    if graph["language"] in {"go", "python", "solidity"}:
+        by_position = {
+            (
+                call["caller"],
+                call["path"],
+                call["line"],
+                call["column"],
+                call.get("metadata", {}).get("call_end_line"),
+                call.get("metadata", {}).get("call_end_column"),
+            )
+            for call in graph["calls"]
+        }
+        for call in graph["calls"]:
+            for origin in call.get("metadata", {}).get("argument_origins", []):
+                if (
+                    origin["kind"] == "call_result"
+                    and (
+                        call["caller"],
+                        origin["path"],
+                        origin["line"],
+                        origin["column"],
+                        origin["end_line"],
+                        origin["end_column"],
+                    )
+                    not in by_position
+                ):
+                    raise ValueError("argument origin references a missing call")
+    if any("modifier_flow" in node.get("metadata", {}) for node in nodes.values()):
+        from .extractors.solidity_flow import validate_modifier_flows
+
+        validate_modifier_flows(graph)
 
 
 def build_graph(
@@ -266,7 +418,7 @@ def build_graph(
     if timeout < 1:
         raise ValueError("timeout must be positive")
     sources, skipped = index_target(target)
-    from .extractors import clang, golang, solidity
+    from .extractors import clang, golang, python, solidity
 
     if language == "auto":
         detected = set()
@@ -276,14 +428,16 @@ def build_graph(
                 detected.add("go")
             elif suffix == ".sol":
                 detected.add("solidity")
+            elif suffix == ".py":
+                detected.add("python")
             elif suffix in clang.UNIT_SUFFIXES:
                 detected.add("c_cpp")
         if len(detected) != 1:
             raise ValueError(
-                "select --language go, c_cpp or solidity for a mixed/unsupported target"
+                "select --language go, c_cpp, solidity or python for a mixed/unsupported target"
             )
         language = detected.pop()
-    if language not in {"go", "c_cpp", "solidity"}:
+    if language not in {"go", "c_cpp", "solidity", "python"}:
         raise ValueError("unsupported graph language")
     if language != "c_cpp" and database is not None:
         raise ValueError("compilation database applies only to c_cpp")
@@ -300,6 +454,8 @@ def build_graph(
             result = solidity.extract(
                 target, sources, compiler=node, timeout=timeout, cache=solidity_cache
             )
+        elif language == "python":
+            result = python.extract(target, sources, timeout=timeout)
         else:
             result = clang.extract(
                 target, sources, database=database, compiler=compiler, timeout=timeout

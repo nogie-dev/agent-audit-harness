@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "storage/files.go",
+      "line": 6,
+      "quote": "os.ReadFile(key)",
+      "cwe": "CWE-73",
+      "title": "Request-selected fixture file is opened without restriction",
+      "reasoning": "The registered Download handler obtains asset from the request, passes it through relay.Fetch and storage.Open, then opens that key. The Notice handler instead opens a fixed literal. Static calls do not establish runtime exposure or readability.",
+      "validation_plan": "Run the separately supplied HTTP probe in an isolated worker against the original and a storage allowlist replacement; compare private, public and constant-notice requests."
+    }
+  ]
+}

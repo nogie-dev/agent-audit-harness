@@ -44,35 +44,42 @@ def make_recon(graph: dict, sources: list, spec: dict) -> dict:
     if len(set(ids)) != len(ids):
         raise ValueError("duplicate hypothesis IDs")
     source_map = {source.path: source for source in sources}
+    origin = spec.get("proposal_origin")
+    if origin is not None and (
+        origin["graph_sha256"] != graph["identity_sha256"]
+        or origin["source_index_sha256"] != digest([s.metadata() for s in sources])
+    ):
+        raise ValueError("recon proposal source or graph identity differs")
     calls = {call["id"]: call for call in graph["calls"]}
     hypotheses = []
     for item in spec["hypotheses"]:
         entry = select_function(graph, item["entry"])
+        selection = item.get("selection")
+        if origin is not None and selection is None:
+            raise ValueError("proposed hypothesis requires source-backed selection")
+        recon_gaps = []
+        if selection is not None:
+            proof = function_evidence(selection["entry_evidence"], entry, source_map[entry["path"]])
+            selection = {**selection, "entry_evidence": proof}
+            claims = [
+                {
+                    "reason": "recon_exposure_unverified",
+                    "detail": "Entry exposure is a hypothesis.",
+                },
+                *(origin["gaps"] if origin else []),
+                *[{"reason": "recon_unresolved", "detail": c} for c in selection["unresolved"]],
+            ]
+            recon_gaps = [
+                {"id": "rg-" + digest([origin, item["id"], claim])[:24], **claim}
+                for claim in claims
+            ]
         working_set = reachable(graph, entry["id"])
         function_ids = [function["id"] for function in working_set["functions"]]
         annotations = []
         for annotation in item["annotations"]:
             function = select_function(graph, annotation["function"])
             source = source_map[function["path"]]
-            lines = source_lines(source.text)[function["line"] - 1 : function["end_line"]]
-            if "column" in function:
-                if function["column"] > len(lines[0].encode()) or function["end_column"] > len(
-                    lines[-1].encode()
-                ):
-                    raise ValueError("function columns exceed actual source")
-                tail = lines[-1].encode()[function["end_column"] :]
-                if tail.strip():
-                    lines[-1] = lines[-1].encode()[: function["end_column"]].decode()
-                lines[0] = lines[0].encode()[function["column"] - 1 :].decode()
-            fragment = {
-                "path": source.path,
-                "first_line": function["line"],
-                "last_line": function["end_line"],
-                "text": "".join(lines),
-                "source_sha256": source.sha256,
-                "id": item["id"],
-            }
-            validate_evidence(annotation["evidence"], [fragment])
+            function_evidence(annotation["evidence"], function, source)
             annotations.append(
                 {
                     **annotation,
@@ -112,6 +119,7 @@ def make_recon(graph: dict, sources: list, spec: dict) -> dict:
                 "assumptions": item["assumptions"],
                 "entry": entry["id"],
                 "entry_status": "provided_hypothesis",
+                **({"selection": selection, "recon_gaps": recon_gaps} if selection else {}),
                 "registrations": registrations,
                 "annotations": annotations,
                 "function_ids": function_ids,
@@ -155,7 +163,11 @@ def make_recon(graph: dict, sources: list, spec: dict) -> dict:
         "limitations": [
             *graph["limitations"],
             *([] if "contexts" in graph else ["Declaration context is unavailable in this graph."]),
-            "Researcher-supplied hypotheses; no automatic whole-repository threat model.",
+            (
+                "Agent-proposed source-backed hypotheses; exposure and priorities are unverified."
+                if origin
+                else "Researcher-supplied hypotheses; no automatic whole-repository threat model."
+            ),
             "Registration is not invocation, server deployment or attacker reachability.",
             "Annotation quotes are verified; their security meaning remains a hypothesis.",
             "Control presence does not prove effectiveness; no traversal stops at a barrier.",
@@ -166,6 +178,43 @@ def make_recon(graph: dict, sources: list, spec: dict) -> dict:
     if len(encode(result).encode()) > MAX_FILE_BYTES:
         raise ValueError("recon exceeds 512 KiB; select fewer hypotheses")
     return result
+
+
+def function_evidence(evidence, function, source):
+    """Keep physical byte columns while bounding quotes to the referenced function."""
+    lines = source_lines(source.text)[function["line"] - 1 : function["end_line"]]
+    fragment = {
+        "path": source.path,
+        "first_line": function["line"],
+        "last_line": function["end_line"],
+        "text": "".join(lines),
+        "source_sha256": source.sha256,
+    }
+    if "column" in evidence:
+        from .triage import checked_evidence
+
+        proof = checked_evidence(evidence, {"fragments": [fragment]})
+        end_line = evidence["line"] + len(source_lines(evidence["quote"])) - 1
+        end_column = len(source_lines(evidence["quote"])[-1].encode())
+        if end_line == evidence["line"]:
+            end_column += evidence["column"] - 1
+        if "column" in function and (
+            (evidence["line"] == function["line"] and evidence["column"] < function["column"])
+            or (end_line == function["end_line"] and end_column > function["end_column"])
+        ):
+            raise ValueError("evidence is outside the referenced function columns")
+    else:
+        proof = {**evidence, "source_sha256": source.sha256}
+    if "column" in function:
+        if function["column"] > len(lines[0].encode()) or function["end_column"] > len(
+            lines[-1].encode()
+        ):
+            raise ValueError("function columns exceed actual source")
+        if lines[-1].encode()[function["end_column"] :].strip():
+            lines[-1] = lines[-1].encode()[: function["end_column"]].decode()
+        lines[0] = lines[0].encode()[function["column"] - 1 :].decode()
+    validate_evidence(evidence, [{**fragment, "text": "".join(lines)}])
+    return proof
 
 
 def build_recon(target: Path, graph_file: Path, spec_file: Path, output: Path) -> dict:
@@ -223,7 +272,7 @@ def merge_fragments(units: list, source_map: dict) -> list[dict]:
 
 
 def make_graph_slices(
-    graph: dict, recon: dict, sources: list, byte_limit: int
+    graph: dict, recon: dict, sources: list, byte_limit: int, static: dict | None = None
 ) -> tuple[list, list]:
     if not 1024 <= byte_limit <= 64_000:
         raise ValueError("slice bytes must be between 1024 and 64000")
@@ -231,6 +280,12 @@ def make_graph_slices(
     contexts = {node["id"]: node for node in graph.get("contexts", [])}
     source_map = {source.path: source for source in sources}
     calls = {call["id"]: call for call in graph["calls"]}
+    if graph["language"] in {"go", "python"} and static is not None:
+        from .go_value_flow import go_value_flows
+
+        value_flows, value_gaps = go_value_flows(graph, static)
+    else:
+        value_flows, value_gaps = [], []
     slices, gaps = [], []
     for number, hypothesis in enumerate(recon["hypotheses"], 1):
         ordered = list(
@@ -267,10 +322,20 @@ def make_graph_slices(
             "calls": len(call_ids),
             "annotations": len(hypothesis["annotations"]),
         }
+        flow_functions = [
+            functions[ref]
+            for ref in ordered
+            if "modifier_flow" in functions[ref].get("metadata", {})
+            and (functions[ref]["kind"] != "modifier" or ref == hypothesis["entry"])
+        ]
+        if flow_functions:
+            omitted["modifier_flows"] = len(flow_functions)
         source_slice = {
             "id": f"s{number:04d}",
             "hypothesis": {
-                key: hypothesis[key] for key in ("id", "question", "assumptions", "entry")
+                key: hypothesis[key]
+                for key in ("id", "question", "assumptions", "entry", "selection", "recon_gaps")
+                if key in hypothesis
             },
             "fragments": [],
             "calls": [],
@@ -281,6 +346,25 @@ def make_graph_slices(
                 "security labels are hypotheses."
             ),
         }
+        if flow_functions:
+            source_slice["modifier_flows"] = []
+        if static is not None:
+            from .static_analysis import attach_records, selected_records
+
+            records = selected_records(static, hypothesis, graph)
+            omitted.update({"static_" + key: len(value) for key, value in records.items()})
+            source_slice["static_analysis"] = {
+                "artifact_sha256": static["identity_sha256"],
+                "engine": {key: static["engine"][key] for key in ("name", "version", "scope")},
+                "coverage_status": static["coverage"]["status"],
+                "rules": [],
+                "observations": [],
+                "taint_results": [],
+                "gaps": [],
+                "note": "Analyzer reports are hypotheses. Gaps mark boundaries, not taint edges.",
+            }
+            if graph["language"] in {"go", "python"}:
+                source_slice["value_flows"] = []
         accepted, included_functions = [], set()
 
         def fits(candidate):
@@ -332,6 +416,28 @@ def make_graph_slices(
                         "reason": "annotation_not_supplied",
                     }
                 )
+        for function in flow_functions:
+            flow = function["metadata"]["modifier_flow"]
+            candidate = {
+                **source_slice,
+                "modifier_flows": [
+                    *source_slice["modifier_flows"],
+                    {"function_id": function["id"], "flow": flow},
+                ],
+            }
+            supplied = {node["function_id"] for node in flow["nodes"]} <= included_functions
+            if supplied and fits(candidate):
+                source_slice = candidate
+                omitted["modifier_flows"] -= 1
+            else:
+                gaps.append(
+                    {
+                        "hypothesis_id": hypothesis["id"],
+                        "kind": "modifier_flow",
+                        "id": function["id"],
+                        "reason": "slice_byte_budget" if supplied else "flow_source_not_supplied",
+                    }
+                )
         for call_id in call_ids:
             call = calls[call_id]
             candidate = {**source_slice, "calls": [*source_slice["calls"], call]}
@@ -348,6 +454,59 @@ def make_graph_slices(
                         "reason": "call_not_supplied",
                     }
                 )
+        if static is not None:
+            source_slice = attach_records(source_slice, records, static, byte_limit, gaps)
+            if graph["language"] in {"go", "python"}:
+                selected_ids = {item["id"] for item in records["observations"]}
+                supplied_ids = {
+                    item["id"] for item in source_slice["static_analysis"]["observations"]
+                }
+                supplied_calls = {call["id"] for call in source_slice["calls"]}
+                relevant = [
+                    flow
+                    for flow in value_flows
+                    if {flow["source_observation_id"], flow["sink_observation_id"]} <= selected_ids
+                ]
+                omitted["value_flows"] = len(relevant)
+                for flow in relevant:
+                    endpoints = {flow["source_observation_id"], flow["sink_observation_id"]}
+                    candidate = {
+                        **source_slice,
+                        "value_flows": [*source_slice["value_flows"], flow],
+                    }
+                    if (
+                        endpoints <= supplied_ids
+                        and set(flow["call_ids"]) <= supplied_calls
+                        and fits(candidate)
+                    ):
+                        source_slice = candidate
+                        omitted["value_flows"] -= 1
+                    else:
+                        gaps.append(
+                            {
+                                "hypothesis_id": hypothesis["id"],
+                                "kind": "value_flow",
+                                "id": flow["source_observation_id"]
+                                + ":"
+                                + flow["sink_observation_id"],
+                                "reason": "value_flow_input_omitted",
+                            }
+                        )
+                for gap in value_gaps:
+                    if {
+                        gap.get("source_observation_id"),
+                        gap.get("sink_observation_id"),
+                    } <= selected_ids:
+                        gaps.append(
+                            {
+                                "hypothesis_id": hypothesis["id"],
+                                "kind": "value_flow",
+                                "id": str(gap.get("source_observation_id"))
+                                + ":"
+                                + str(gap.get("sink_observation_id")),
+                                "reason": gap["reason"],
+                            }
+                        )
         slices.append(source_slice)
     return slices, gaps
 

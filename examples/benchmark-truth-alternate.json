@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "bounded-copy-control",
+      "path": "bounded.c",
+      "line": 8,
+      "quote": "memcpy(buf, data, length);",
+      "cwe": "CWE-787",
+      "expected": "negative",
+      "rationale": "The preceding branch constrains the copy length to the destination size.",
+      "accepted_locations": [
+        {
+          "path": "bounded.c",
+          "line": 5,
+          "quote": "char buf[16];",
+          "cwe": "CWE-787",
+          "rationale": "A warning at this buffer declaration would concern the same guarded copy."
+        }
+      ]
+    },
+    {
+      "id": "unchecked-copy-hypothesis",
+      "path": "parser.c",
+      "line": 5,
+      "quote": "char buf[16];",
+      "cwe": "CWE-787",
+      "expected": "positive",
+      "rationale": "The fixed destination is one source location for this unchecked copy hypothesis.",
+      "accepted_locations": [
+        {
+          "path": "parser.c",
+          "line": 6,
+          "quote": "memcpy(buf, data, length);",
+          "cwe": "CWE-787",
+          "rationale": "The unchecked copy operation is another source location for the same hypothesis."
+        }
+      ]
+    }
+  ]
+}

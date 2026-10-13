@@ -28,6 +28,8 @@ jobs:
         run: make setup-go
       - name: Prepare pinned Solidity compiler
         run: make setup-solidity
+      - name: Prepare hash-locked Semgrep CE
+        run: make setup-static
       - name: Lint, format and tests
         run: make check
       - name: Replay workflow
@@ -36,7 +38,27 @@ jobs:
         run: make demo-graph
       - name: Go call structure
         run: make demo-go
+      - name: Python call structure
+        run: make demo-python
       - name: Go graph, recon and relationship-based replay
         run: make demo-review
+      - name: Bounded agent evidence requests and resume
+        run: make demo-investigation
       - name: Solidity call structure
         run: make demo-solidity
+      - name: Static evidence, bounded replay and resume
+        run: make demo-static
+      - name: Source-backed model proposals, second static pass and resume
+        run: make demo-models
+      - name: Source-backed recon proposals, investigation priority and resume
+        run: make demo-recon
+      - name: Independent candidate intake and retained static omissions
+        run: make demo-intake
+      - name: Recorded PoC proposals, resume and synthetic operator review
+        run: make demo-poc
+      - name: Frozen build matrix and preserved missing runs
+        run: make demo-matrix
+      - name: Offline labeled replay comparison
+        run: make demo-benchmark
+      - name: Multi-language model evaluation preflight
+        run: make demo-model-evaluation

@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "web/handler.go",
+      "line": 12,
+      "quote": "fmt.Fprintln(w, service.ReadPrivate())",
+      "cwe": "CWE-862",
+      "title": "Private record returned without a local authorization branch",
+      "reasoning": "The additional query shows the normal listener and Server.Serve source. Reachable retains the service/store calls and unresolved external library behavior. These are static facts only. The requested Authenticate selector was unavailable, so possible surrounding controls and live delivery remain unknown.",
+      "validation_plan": "Review the source-backed uncertainty and use a separately frozen isolated HTTP harness for live entrypoint and controlled fix comparisons. No dynamic check has run in this analysis."
+    }
+  ]
+}

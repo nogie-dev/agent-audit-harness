@@ -1,0 +1,785 @@
+{
+  "origin": "Synthetic gpt-6-luna study 2026-10-13; saved failed replies and supplied source only; no executable instructions.",
+  "cases": [
+    {
+      "id": "go-r2-baseline-s0003.triage-attempt-0008",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0003",
+        "fragments": [
+          {
+            "path": "service/flow.go",
+            "first_line": 1,
+            "last_line": 30,
+            "source_sha256": "9fb2d71429518ad8d3e2e8c38e9b9a370bef514095332073457e893bb9d8c116",
+            "text": "package service\n\nimport (\n\t\"audit.example/review/model\"\n\t\"audit.example/review/runner\"\n)\n\nfunc Raw(req model.Request) {\n\trunner.Execute(req.Program)\n}\n\nfunc Checked(req model.Request) {\n\tif !allowed(req.Program) {\n\t\treturn\n\t}\n\trunner.Execute(req.Program)\n}\n\nfunc allowed(program string) bool {\n\treturn program == \"date\"\n}\n\ntype Engine interface {\n\tRun(model.Request)\n}\n\nfunc Dynamic(engine Engine, callback func(model.Request), req model.Request) {\n\tengine.Run(req)\n\tcallback(req)\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-78",
+          "id": "f-0a764c756b878b2d",
+          "line": 9,
+          "path": "service/flow.go",
+          "quote": "\trunner.Execute(req.Program)",
+          "reasoning": "The supplied function passes `req.Program` directly to `runner.Execute`. This suggests a possible command-injection boundary if the program value is attacker-controlled and `Execute` invokes a shell or otherwise interprets it unsafely. The slice does not include `runner.Execute` or callers, so the sink semantics, input control, and reachability are unknown; this is a hypothesis, not a confirmed vulnerability.",
+          "slice_id": "s0003",
+          "source_sha256": "9fb2d71429518ad8d3e2e8c38e9b9a370bef514095332073457e893bb9d8c116",
+          "title": "Raw request program reaches an execution sink without a visible check",
+          "validation_plan": "Add a focused test that supplies a program value containing shell metacharacters to the actual request entry point. Observe whether execution is restricted to an allowed executable or whether the value is interpreted as shell syntax; first establish `runner.Execute` semantics and caller reachability."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": {
+              "invariant": "execution-input-must-be-validated",
+              "description": "Raw forwards req.Program to runner.Execute without a visible validation check. The slice does not establish runner.Execute semantics, whether req.Program is attacker-controlled, or whether Raw is reachable from an entry point, so the proposed broken control remains a hypothesis.",
+              "evidence": {
+                "path": "service/flow.go",
+                "line": 9,
+                "column": 1,
+                "quote": "\trunner.Execute(req.Program)"
+              },
+              "fix": {
+                "strategy": "validate-before-execution",
+                "description": "Validate req.Program against an allowed executable set before calling runner.Execute; Checked demonstrates a local guard that allows only \"date\", though the slice does not establish whether this is the correct shared repair location or whether Execute interprets the value unsafely.",
+                "evidence": {
+                  "path": "service/flow.go",
+                  "line": 13,
+                  "column": 2,
+                  "quote": "\tif !allowed(req.Program) {"
+                }
+              }
+            },
+            "decisions": [
+              {
+                "candidate_id": "f-0a764c756b878b2d",
+                "verdict": "needs_validation",
+                "rationale": "Raw passes req.Program directly to runner.Execute with no visible guard, which warrants a focused validation of the execution semantics and input/reachability assumptions. A separate Checked function guards the same argument before its call, but that does not establish protection for Raw.",
+                "counterevidence": [
+                  {
+                    "claim": "The Checked path rejects program values not accepted by allowed before calling runner.Execute; this shows a guarded path exists but does not establish that Raw uses it.",
+                    "evidence": {
+                      "path": "service/flow.go",
+                      "line": 13,
+                      "column": 1,
+                      "quote": "\tif !allowed(req.Program) {"
+                    }
+                  },
+                  {
+                    "claim": "allowed accepts only the exact string \"date\".",
+                    "evidence": {
+                      "path": "service/flow.go",
+                      "line": 19,
+                      "column": 1,
+                      "quote": "\treturn program == \"date\""
+                    }
+                  }
+                ],
+                "unresolved": [
+                  {
+                    "claim": "Whether runner.Execute interprets its argument as a command or shell input, whether req.Program is attacker-controlled, and whether Raw is reachable from an exposed entry point are not shown in the supplied slice; the investigation response for runner.Execute is unavailable.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "triage_column_mismatch",
+      "expected_field": "/groups/0/root_cause/fix/evidence/column",
+      "expected_first_matching_byte_column": 1
+    },
+    {
+      "id": "go-r2-baseline-s0003.triage-attempt-0009",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0003",
+        "fragments": [
+          {
+            "path": "service/flow.go",
+            "first_line": 1,
+            "last_line": 30,
+            "source_sha256": "9fb2d71429518ad8d3e2e8c38e9b9a370bef514095332073457e893bb9d8c116",
+            "text": "package service\n\nimport (\n\t\"audit.example/review/model\"\n\t\"audit.example/review/runner\"\n)\n\nfunc Raw(req model.Request) {\n\trunner.Execute(req.Program)\n}\n\nfunc Checked(req model.Request) {\n\tif !allowed(req.Program) {\n\t\treturn\n\t}\n\trunner.Execute(req.Program)\n}\n\nfunc allowed(program string) bool {\n\treturn program == \"date\"\n}\n\ntype Engine interface {\n\tRun(model.Request)\n}\n\nfunc Dynamic(engine Engine, callback func(model.Request), req model.Request) {\n\tengine.Run(req)\n\tcallback(req)\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-78",
+          "id": "f-0a764c756b878b2d",
+          "line": 9,
+          "path": "service/flow.go",
+          "quote": "\trunner.Execute(req.Program)",
+          "reasoning": "The supplied function passes `req.Program` directly to `runner.Execute`. This suggests a possible command-injection boundary if the program value is attacker-controlled and `Execute` invokes a shell or otherwise interprets it unsafely. The slice does not include `runner.Execute` or callers, so the sink semantics, input control, and reachability are unknown; this is a hypothesis, not a confirmed vulnerability.",
+          "slice_id": "s0003",
+          "source_sha256": "9fb2d71429518ad8d3e2e8c38e9b9a370bef514095332073457e893bb9d8c116",
+          "title": "Raw request program reaches an execution sink without a visible check",
+          "validation_plan": "Add a focused test that supplies a program value containing shell metacharacters to the actual request entry point. Observe whether execution is restricted to an allowed executable or whether the value is interpreted as shell syntax; first establish `runner.Execute` semantics and caller reachability."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": null,
+            "decisions": [
+              {
+                "candidate_id": "f-0a764c756b878b2d",
+                "verdict": "needs_validation",
+                "rationale": "Raw passes req.Program directly to runner.Execute without a visible guard, which warrants validation. The slice does not show Execute's behavior, whether req.Program is attacker-controlled, or whether Raw is reachable from an exposed entry point; the investigation response is unavailable.",
+                "counterevidence": [
+                  {
+                    "claim": "Checked rejects values for which allowed returns false before calling runner.Execute, but the slice does not show that Raw uses this guarded path.",
+                    "evidence": {
+                      "path": "service/flow.go",
+                      "line": 12,
+                      "column": 1,
+                      "quote": "\tif !allowed(req.Program) {"
+                    }
+                  }
+                ],
+                "unresolved": [
+                  {
+                    "claim": "Whether runner.Execute treats its argument as a command or shell input, whether req.Program is attacker-controlled, and whether Raw is reachable from an exposed entry point.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/groups/0/decisions/0/counterevidence/0/evidence/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "python-r2-baseline-s0001.q0001.analysis-attempt-0002",
+      "stage": "analysis",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "entry.py",
+            "first_line": 1,
+            "last_line": 25,
+            "source_sha256": "df53176e22c3cdb42ea6da27dafe0d947330ddb030edfb205a7d7c6a518cb31e",
+            "text": "import os\n\nfrom worker import execute\n\n\ndef raw():\n    value = input()\n    copied = value\n    os.system(copied)  # nosemgrep: target suppression must not hide evidence\n\n\ndef constant():\n    _unused = input()\n    os.system(\"constant\")\n\n\ndef across_files():\n    value = input()\n    execute(value)\n\n\ndef dynamic(callback):\n    value = input()\n    changed = callback(value)\n    os.system(changed)\n"
+          }
+        ]
+      },
+      "candidates": [],
+      "rejected_reply": {
+        "candidates": [
+          {
+            "path": "entry.py",
+            "line": 10,
+            "cwe": "CWE-78",
+            "title": "Unsanitized input passed to a shell command",
+            "reasoning": "The value returned by `input()` is copied directly and passed to `os.system`, which invokes a shell. If an attacker can supply this input, shell metacharacters may be interpreted. No validation or escaping appears in the supplied function. The function's reachability and the input trust boundary are unknown.",
+            "quote": "    os.system(copied)  # nosemgrep: target suppression must not hide evidence",
+            "validation_plan": "Add a focused test that supplies shell metacharacters through the input source and observes whether they are interpreted by the command; expected safe behavior is that input is treated as data or rejected."
+          },
+          {
+            "path": "entry.py",
+            "line": 24,
+            "cwe": "CWE-78",
+            "title": "Callback result reaches a shell command",
+            "reasoning": "The function accepts a callback, passes it input from `input()`, and sends the callback's result to `os.system`. If untrusted input reaches this function and the callback returns it unchanged, shell command injection may be possible. The callback binding, caller reachability, and any transformations are unknown.",
+            "quote": "    os.system(changed)",
+            "validation_plan": "Test with a callback that returns its argument and controlled shell metacharacter input; expected safe behavior is that the value is not interpreted as shell syntax."
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/candidates/0/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "python-r2-baseline-s0001.q0001.analysis-attempt-0003",
+      "stage": "analysis",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "entry.py",
+            "first_line": 1,
+            "last_line": 25,
+            "source_sha256": "df53176e22c3cdb42ea6da27dafe0d947330ddb030edfb205a7d7c6a518cb31e",
+            "text": "import os\n\nfrom worker import execute\n\n\ndef raw():\n    value = input()\n    copied = value\n    os.system(copied)  # nosemgrep: target suppression must not hide evidence\n\n\ndef constant():\n    _unused = input()\n    os.system(\"constant\")\n\n\ndef across_files():\n    value = input()\n    execute(value)\n\n\ndef dynamic(callback):\n    value = input()\n    changed = callback(value)\n    os.system(changed)\n"
+          }
+        ]
+      },
+      "candidates": [],
+      "rejected_reply": {
+        "candidates": [
+          {
+            "path": "entry.py",
+            "line": 10,
+            "cwe": "CWE-78",
+            "title": "Untrusted input passed to a shell command",
+            "reasoning": "`raw()` reads a value from `input()`, copies it without visible transformation, then passes it to `os.system`. If an attacker can control this input and the function is reachable, shell syntax may be interpreted. The trust boundary and reachability are unknown; the supplied slice shows no validation or escaping.",
+            "quote": "    os.system(copied)  # nosemgrep: target suppression must not hide evidence",
+            "validation_plan": "Add a focused test with controlled input containing shell metacharacters and observe whether the command interprets them; expected safe behavior is to treat the value as data or reject it."
+          },
+          {
+            "path": "entry.py",
+            "line": 24,
+            "cwe": "CWE-78",
+            "title": "Callback result passed to a shell command",
+            "reasoning": "`dynamic()` passes input from `input()` to a callback and sends the callback's return value to `os.system`. If the input is attacker-controlled and the callback returns it unchanged, shell injection may be possible. The callback binding, caller reachability, and transformations are unknown.",
+            "quote": "    os.system(changed)",
+            "validation_plan": "Test using a callback that returns its argument and controlled shell metacharacter input; expected safe behavior is that the value is not interpreted as shell syntax."
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/candidates/0/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "solidity-r1-baseline-s0002.q0001.analysis-attempt-0004",
+      "stage": "analysis",
+      "source_slice": {
+        "id": "s0002",
+        "fragments": [
+          {
+            "path": "Vault.sol",
+            "first_line": 1,
+            "last_line": 16,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport {Authority} from \"./Authority.sol\";\n\ncontract Vault is Authority {\n    receive() external payable {}\n\n    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n\n    function releaseB(address payable recipient) external ownerOnly {\n        recipient.transfer(address(this).balance);\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [],
+      "rejected_reply": {
+        "candidates": [
+          {
+            "path": "Vault.sol",
+            "line": 10,
+            "cwe": "CWE-862",
+            "title": "Unrestricted withdrawal in releaseA",
+            "reasoning": "The public receive function allows ETH to enter the vault, and `releaseA` transfers the entire balance to a caller-chosen recipient without a visible authorization check. The source is the externally supplied `recipient`; the sink is the balance transfer. The missing invariant is that only an authorized principal may choose the recipient or trigger release. `releaseB` uses `ownerOnly`, but the supplied slice does not define that modifier, so its effective authorization is unknown. Exploitability depends on the vault being funded and reachable in the deployed system; no caller restrictions or intended public-release policy are shown.",
+            "quote": "    function releaseA(address payable recipient) external {",
+            "validation_plan": "In a regression test, fund the vault, call `releaseA` from a non-owner with a distinct recipient, and observe whether the call succeeds and transfers the full balance. If only authorized callers should release funds, expect the call to revert and the balance to remain."
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/candidates/0/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "solidity-r1-candidate-s0001.triage-attempt-0003",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "Authority.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "abstract contract Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "import {Authority} from \"./Authority.sol\";\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 6,
+            "last_line": 6,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "contract Vault is Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 9,
+            "last_line": 11,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 1,
+            "last_line": 13,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nabstract contract Authority {\n    address public owner;\n\n    constructor() { owner = msg.sender; }\n\n    modifier ownerOnly() {\n        require(msg.sender == owner, \"owner\");\n        _;\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-862",
+          "hypothesis_id": "release-a-access",
+          "id": "f-75e853d5d0a14693",
+          "line": 9,
+          "path": "Vault.sol",
+          "quote": "    function releaseA(address payable recipient) external {",
+          "reasoning": "The declared policy says release should be owner-only, but this external function has no owner check or ownerOnly modifier. Its caller can choose recipient, and the function transfers the entire balance. If the contract is deployed and funded, an arbitrary caller may redirect those funds. Runtime exposure and deployment state are unverified.",
+          "slice_id": "s0001",
+          "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+          "title": "Anyone can direct the vault’s full balance",
+          "validation_plan": "Deploy and fund the vault; call releaseA from a non-owner with a test recipient. Expected under the stated policy: the call reverts and the balance remains unchanged."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": {
+              "invariant": "vault-release-owner-only",
+              "description": "The proposed policy requires vault releases to be restricted to the owner, but releaseA is externally callable and lacks an owner check.",
+              "evidence": {
+                "path": "Vault.sol",
+                "line": 9,
+                "column": 1,
+                "quote": "    function releaseA(address payable recipient) external {"
+              },
+              "fix": {
+                "strategy": "apply-owner-authorization",
+                "description": "Apply the inherited ownerOnly modifier to releaseA so non-owner callers fail the authorization check.",
+                "evidence": {
+                  "path": "Authority.sol",
+                  "line": 9,
+                  "column": 5,
+                  "quote": "    modifier ownerOnly() {"
+                }
+              }
+            },
+            "decisions": [
+              {
+                "candidate_id": "f-75e853d5d0a14693",
+                "verdict": "needs_validation",
+                "rationale": "The source shows releaseA is external, transfers the full contract balance to its caller-selected recipient, and has no visible authorization. The inherited Authority contract provides ownerOnly, but releaseA does not apply it. This supports a concrete access-control hypothesis; the owner-only policy and deployment/funding state are assumptions, so the issue is not confirmed.",
+                "counterevidence": [],
+                "unresolved": [
+                  {
+                    "claim": "The stated owner-only release policy is an assumption, and deployment, funding, and runtime exposure are not established by the supplied source.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "triage_column_mismatch",
+      "expected_field": "/groups/0/root_cause/fix/evidence/column",
+      "expected_first_matching_byte_column": 1
+    },
+    {
+      "id": "solidity-r1-candidate-s0001.triage-attempt-0004",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "Authority.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "abstract contract Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "import {Authority} from \"./Authority.sol\";\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 6,
+            "last_line": 6,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "contract Vault is Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 9,
+            "last_line": 11,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 1,
+            "last_line": 13,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nabstract contract Authority {\n    address public owner;\n\n    constructor() { owner = msg.sender; }\n\n    modifier ownerOnly() {\n        require(msg.sender == owner, \"owner\");\n        _;\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-862",
+          "hypothesis_id": "release-a-access",
+          "id": "f-75e853d5d0a14693",
+          "line": 9,
+          "path": "Vault.sol",
+          "quote": "    function releaseA(address payable recipient) external {",
+          "reasoning": "The declared policy says release should be owner-only, but this external function has no owner check or ownerOnly modifier. Its caller can choose recipient, and the function transfers the entire balance. If the contract is deployed and funded, an arbitrary caller may redirect those funds. Runtime exposure and deployment state are unverified.",
+          "slice_id": "s0001",
+          "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+          "title": "Anyone can direct the vault’s full balance",
+          "validation_plan": "Deploy and fund the vault; call releaseA from a non-owner with a test recipient. Expected under the stated policy: the call reverts and the balance remains unchanged."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": {
+              "invariant": "vault-release-owner-only",
+              "description": "The candidate relies on the stated owner-only release policy; releaseA is externally callable and transfers the full balance to its supplied recipient without applying the inherited owner check.",
+              "evidence": {
+                "path": "Vault.sol",
+                "line": 9,
+                "column": 1,
+                "quote": "    function releaseA(address payable recipient) external {"
+              },
+              "fix": {
+                "strategy": "apply-owner-authorization",
+                "description": "Apply the inherited ownerOnly modifier to releaseA, which checks msg.sender against owner.",
+                "evidence": {
+                  "path": "Authority.sol",
+                  "line": 10,
+                  "column": 1,
+                  "quote": "    modifier ownerOnly() {"
+                }
+              }
+            },
+            "decisions": [
+              {
+                "candidate_id": "f-75e853d5d0a14693",
+                "verdict": "needs_validation",
+                "rationale": "The source supports a specific access-control hypothesis: releaseA is external, accepts a caller-chosen recipient, and transfers the full balance, while its declaration does not apply ownerOnly. The inherited modifier checks msg.sender against owner. Whether owner-only release is the intended policy, and whether the deployed contract is funded and exposed, are not established by the source.",
+                "counterevidence": [],
+                "unresolved": [
+                  {
+                    "claim": "The owner-only policy and deployment, funding, and runtime exposure are unverified.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/groups/0/root_cause/fix/evidence/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "solidity-r2-baseline-s0002.q0001.analysis-attempt-0004",
+      "stage": "analysis",
+      "source_slice": {
+        "id": "s0002",
+        "fragments": [
+          {
+            "path": "Vault.sol",
+            "first_line": 1,
+            "last_line": 16,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport {Authority} from \"./Authority.sol\";\n\ncontract Vault is Authority {\n    receive() external payable {}\n\n    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n\n    function releaseB(address payable recipient) external ownerOnly {\n        recipient.transfer(address(this).balance);\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [],
+      "rejected_reply": {
+        "candidates": [
+          {
+            "path": "Vault.sol",
+            "line": 10,
+            "cwe": "CWE-862",
+            "title": "Unrestricted withdrawal in releaseA",
+            "reasoning": "The source slice shows that releaseA is externally callable and transfers the vault’s entire balance to a caller-selected recipient without an authorization check in its body. This suggests a missing authorization boundary. Whether Authority provides a global control or callers are otherwise constrained is unknown because its definition and call context are unavailable. Regression test: fund the vault, call releaseA from a non-owner with a test recipient, and observe whether the transfer succeeds; if withdrawals should be owner-only, expect it to revert.",
+            "quote": "    function releaseA(address payable recipient) external {",
+            "validation_plan": "Test a funded vault by invoking releaseA as a non-owner with a controlled recipient; verify whether the transfer succeeds or reverts under the intended access policy."
+          }
+        ]
+      },
+      "expected_code": "candidate_quote_mismatch",
+      "expected_field": "/candidates/0/quote",
+      "expected_first_matching_byte_column": null
+    },
+    {
+      "id": "solidity-r2-candidate-s0001.triage-attempt-0003",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "Authority.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "abstract contract Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "import {Authority} from \"./Authority.sol\";\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 6,
+            "last_line": 6,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "contract Vault is Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 9,
+            "last_line": 11,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 1,
+            "last_line": 13,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nabstract contract Authority {\n    address public owner;\n\n    constructor() { owner = msg.sender; }\n\n    modifier ownerOnly() {\n        require(msg.sender == owner, \"owner\");\n        _;\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-284",
+          "hypothesis_id": "release-a-access",
+          "id": "f-11f30f13088953cf",
+          "line": 9,
+          "path": "Vault.sol",
+          "quote": "    function releaseA(address payable recipient) external {",
+          "reasoning": "The source exposes `releaseA(address payable recipient)` as an external function and immediately transfers the entire contract balance to the caller-selected recipient. The supplied `Authority` modifier checks `msg.sender == owner`, but `releaseA` does not apply it. If owner-only release is the intended policy, any caller able to reach this function can direct the funds elsewhere. Deployment, funding, and any additional runtime controls are not shown.",
+          "slice_id": "s0001",
+          "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+          "title": "releaseA is callable without owner authorization",
+          "validation_plan": "Add a regression test that funds the vault, calls `releaseA` from a non-owner with a chosen recipient, and observes whether the call succeeds and transfers the balance. Expected under an owner-only policy: the call reverts and the recipient receives nothing."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": {
+              "invariant": "release-requires-owner",
+              "description": "If releasing the vault balance is intended to be owner-only, every release entry point must enforce the inherited owner check before transferring funds. `releaseA` has no modifier, while the shared authorization control is `Authority.ownerOnly`.",
+              "evidence": {
+                "path": "Vault.sol",
+                "line": 9,
+                "column": 1,
+                "quote": "    function releaseA(address payable recipient) external {"
+              },
+              "fix": {
+                "strategy": "apply-owner-authorization",
+                "description": "Apply the inherited `ownerOnly` modifier to `releaseA` so the caller is checked against `owner` before the transfer.",
+                "evidence": {
+                  "path": "Authority.sol",
+                  "line": 9,
+                  "column": 5,
+                  "quote": "    modifier ownerOnly() {"
+                }
+              }
+            },
+            "decisions": [
+              {
+                "candidate_id": "f-11f30f13088953cf",
+                "verdict": "needs_validation",
+                "rationale": "The function is externally callable, accepts a caller-selected recipient, and transfers the full contract balance without an authorization modifier. The supplied `Authority` source shows an owner check exists, but the intended owner-only policy is an explicit assumption, and deployment, funding, and runtime behavior are not established by the fragments. A focused test under that policy can determine whether a non-owner call succeeds.",
+                "counterevidence": [],
+                "unresolved": [
+                  {
+                    "claim": "The fragments do not establish that owner-only release is the intended policy or show deployment and funding conditions.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "triage_column_mismatch",
+      "expected_field": "/groups/0/root_cause/fix/evidence/column",
+      "expected_first_matching_byte_column": 1
+    },
+    {
+      "id": "solidity-r2-candidate-s0001.triage-attempt-0004",
+      "stage": "triage",
+      "source_slice": {
+        "id": "s0001",
+        "fragments": [
+          {
+            "path": "Authority.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "abstract contract Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 2,
+            "last_line": 2,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "pragma solidity ^0.8.20;\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 4,
+            "last_line": 4,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "import {Authority} from \"./Authority.sol\";\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 6,
+            "last_line": 6,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "contract Vault is Authority {\n"
+          },
+          {
+            "path": "Vault.sol",
+            "first_line": 9,
+            "last_line": 11,
+            "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+            "text": "    function releaseA(address payable recipient) external {\n        recipient.transfer(address(this).balance);\n    }\n"
+          },
+          {
+            "path": "Authority.sol",
+            "first_line": 1,
+            "last_line": 13,
+            "source_sha256": "16e76e2bb0e205eb493a94fd8a6947d8b8f4bf288e4573366c71cf2fa03e3fd1",
+            "text": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nabstract contract Authority {\n    address public owner;\n\n    constructor() { owner = msg.sender; }\n\n    modifier ownerOnly() {\n        require(msg.sender == owner, \"owner\");\n        _;\n    }\n}\n"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "cwe": "CWE-284",
+          "hypothesis_id": "release-a-access",
+          "id": "f-11f30f13088953cf",
+          "line": 9,
+          "path": "Vault.sol",
+          "quote": "    function releaseA(address payable recipient) external {",
+          "reasoning": "The source exposes `releaseA(address payable recipient)` as an external function and immediately transfers the entire contract balance to the caller-selected recipient. The supplied `Authority` modifier checks `msg.sender == owner`, but `releaseA` does not apply it. If owner-only release is the intended policy, any caller able to reach this function can direct the funds elsewhere. Deployment, funding, and any additional runtime controls are not shown.",
+          "slice_id": "s0001",
+          "source_sha256": "a88771ba0b0e92070c035b6180b75b68e49df6453fb8bc46ad6b0b67cfdc7485",
+          "title": "releaseA is callable without owner authorization",
+          "validation_plan": "Add a regression test that funds the vault, calls `releaseA` from a non-owner with a chosen recipient, and observes whether the call succeeds and transfers the balance. Expected under an owner-only policy: the call reverts and the recipient receives nothing."
+        }
+      ],
+      "rejected_reply": {
+        "groups": [
+          {
+            "root_cause": {
+              "invariant": "release-requires-owner",
+              "description": "Under the stated owner-only policy assumption, release entry points must check the caller against the owner before transferring funds. `releaseA` has no authorization modifier; `Authority` defines an owner check, but the source does not establish that this policy is intended.",
+              "evidence": {
+                "path": "Vault.sol",
+                "line": 9,
+                "column": 1,
+                "quote": "    function releaseA(address payable recipient) external {"
+              },
+              "fix": {
+                "strategy": "apply-owner-authorization",
+                "description": "Apply the inherited `ownerOnly` modifier to `releaseA` so it checks the caller against `owner` before transferring.",
+                "evidence": {
+                  "path": "Authority.sol",
+                  "line": 9,
+                  "column": 1,
+                  "quote": "    modifier ownerOnly() {"
+                }
+              }
+            },
+            "decisions": [
+              {
+                "candidate_id": "f-11f30f13088953cf",
+                "verdict": "needs_validation",
+                "rationale": "The external function accepts a recipient and transfers the full balance without an authorization modifier. This supports the hypothesis that an arbitrary caller can direct the funds, conditional on owner-only release being the intended policy. The fragments do not establish that policy or deployment and funding conditions; a focused test under the policy assumption could validate the behavior.",
+                "counterevidence": [
+                  {
+                    "claim": "The inherited authorization control checks that the caller is the owner, but its existence does not establish that `releaseA` is required to use it.",
+                    "evidence": {
+                      "path": "Authority.sol",
+                      "line": 10,
+                      "column": 9,
+                      "quote": "        require(msg.sender == owner, \"owner\");"
+                    }
+                  }
+                ],
+                "unresolved": [
+                  {
+                    "claim": "Whether owner-only release is the intended policy, and whether the deployed contract is reachable and funded.",
+                    "evidence": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected_code": "triage_column_mismatch",
+      "expected_field": "/groups/0/decisions/0/counterevidence/0/evidence/column",
+      "expected_first_matching_byte_column": 1
+    }
+  ]
+}

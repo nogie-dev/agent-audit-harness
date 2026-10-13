@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "public-full-balance-release",
+      "path": "Vault.sol",
+      "line": 10,
+      "quote": "recipient.transfer(address(this).balance)",
+      "cwe": "CWE-284",
+      "expected": "positive",
+      "rationale": "The synthetic policy reserves full-balance release for the owner, but releaseA has no access gate and accepts a caller-selected recipient. Deployment and impact are unverified."
+    },
+    {
+      "id": "owner-gated-control",
+      "path": "Vault.sol",
+      "line": 14,
+      "quote": "recipient.transfer(address(this).balance)",
+      "cwe": "CWE-284",
+      "expected": "negative",
+      "rationale": "releaseB applies the inherited ownerOnly modifier, whose require checks msg.sender against the constructor-set owner before the body."
+    }
+  ]
+}

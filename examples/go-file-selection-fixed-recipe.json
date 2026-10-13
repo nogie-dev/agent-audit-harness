@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "purpose": "Compare request-selected fixture file access through a real loopback HTTP listener while keeping public and constant-file controls.",
+  "candidate_id": "f-243fee58e08fd1ad",
+  "command": [
+    "/bin/sh",
+    "/input/probe.sh"
+  ],
+  "inputs": [
+    {
+      "path": "cmd/server/main.go",
+      "sha256": "9493511dcdd84d0e30f1daa4d45bca734df588440b993410c0e9e9d36c5a4403"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "b982d41afd0f2e816c4ba28370fbb93aeeb2c303a615a6d0c404ddda65e2493a"
+    },
+    {
+      "path": "notice.txt",
+      "sha256": "40b5c019e7bd89bc700657c645d4ed21c1d3f10688b9bc4dd103d87af623606b"
+    },
+    {
+      "path": "private.txt",
+      "sha256": "a1eedd9f2dd43a3869e4db607dd6a01a5d316afd72743d1a45a9e3592e0b9cfd"
+    },
+    {
+      "path": "probe.sh",
+      "sha256": "f7d86171bcebfb1ba587b63176787a679655750908a6fea89e21c48396b86370"
+    },
+    {
+      "path": "public.txt",
+      "sha256": "79c28de1880b282eeec40d05d0061fd4047b944a8a8e7d41db9c45a7e8b9113d"
+    },
+    {
+      "path": "relay/forward.go",
+      "sha256": "a8ca9ec1d42520c273fcd766df636be0a1c7f92597ab3f70b7ffcb9e675683b1"
+    },
+    {
+      "path": "storage/files.go",
+      "sha256": "a8d58e0cf0135221cdcb84559478fdaa5d0d4b9db57dfe47f9daec6bda55cc58"
+    },
+    {
+      "path": "web/download.go",
+      "sha256": "b662ee1dc31618fa1a758b03bf821ead04e621c970c55cf38db4e764e7cfc023"
+    },
+    {
+      "path": "web/routes.go",
+      "sha256": "c88990ad455fb4d77e2544574527a7963d8f4787e56d01d63752b72b041641fa"
+    }
+  ],
+  "limits": {
+    "cpus": 2,
+    "memory_mb": 1024,
+    "output_bytes": 1048576,
+    "pids": 64,
+    "scratch_mb": 512,
+    "timeout_seconds": 180
+  },
+  "oracle": {
+    "description": "A request selecting private.txt must not return the private record. The unchanged probe also requires public.txt and the constant notice route to return their exact expected bodies in both runs.",
+    "source": {
+      "path": "storage/files.go",
+      "line": 6,
+      "column": 9,
+      "quote": "os.ReadFile(key)"
+    },
+    "harness_path": "probe.sh",
+    "entrypoint": {
+      "kind": "entrypoint",
+      "description": "Launch the normal server and send a loopback HTTP GET through its registered ServeMux.",
+      "source": {
+        "path": "web/download.go",
+        "line": 10,
+        "column": 1,
+        "quote": "func Download(w http.ResponseWriter, r *http.Request) {"
+      },
+      "invocation": {
+        "path": "probe.sh",
+        "line": 41,
+        "column": 5,
+        "quote": "response, err := client.Get(\"http://\" + address + path)"
+      },
+      "observation": {
+        "stream": "stdout",
+        "line": "TARGET private stdout \"ENTRY HTTP /download\""
+      }
+    },
+    "reproduced": {
+      "stream": "stdout",
+      "line": "ORACLE unauthorized-read"
+    },
+    "not_reproduced": {
+      "stream": "stdout",
+      "line": "ORACLE private-blocked"
+    },
+    "completed": {
+      "stream": "stdout",
+      "line": "CHECK complete"
+    },
+    "expected_exit_codes": [
+      0
+    ],
+    "resolutions": [
+      {
+        "issue_id": "vi-1ee976498656b9ae",
+        "requirement": "fix_comparison",
+        "rationale": "The unchanged private request is denied after the allowlist while public and constant-notice requests still return their exact fixture bodies."
+      },
+      {
+        "issue_id": "vi-2d45ec40d818897a",
+        "requirement": "reproduction",
+        "rationale": "The live private response and fixed denial show the ResponseWriter path for this request only."
+      },
+      {
+        "issue_id": "vi-6487a89232d767aa",
+        "requirement": "reproduction",
+        "rationale": "The private and public query values select their corresponding files, evidencing Values.Get for these fixture requests only."
+      },
+      {
+        "issue_id": "vi-666200d58d0f6469",
+        "requirement": "entrypoint",
+        "rationale": "The loopback GET reaches the registered handler marker through ServeMux for this fixture request only."
+      },
+      {
+        "issue_id": "vi-7bfd03b44896c985",
+        "requirement": "reproduction",
+        "rationale": "The live private response matches the exact bytes of private.txt, evidencing this os.ReadFile operation for the fixture request only."
+      },
+      {
+        "issue_id": "vi-7f58e825e95baad5",
+        "requirement": "fix_comparison",
+        "rationale": "The fixed private response is HTTP 404 with the exact unavailable body, evidencing the error branch for this request only."
+      },
+      {
+        "issue_id": "vi-8041a69a0dda75ec",
+        "requirement": "entrypoint",
+        "rationale": "The real loopback GET reaches the declared handler marker before the private response."
+      },
+      {
+        "issue_id": "vi-eb5117be70531bff",
+        "requirement": "entrypoint",
+        "rationale": "The marker printed by the handler is observed in target stdout after the request."
+      },
+      {
+        "issue_id": "vi-ee01ef0475014a16",
+        "requirement": "reproduction",
+        "rationale": "The private and public query values select their corresponding files; the notice query remains a constant-file negative control."
+      }
+    ]
+  },
+  "replacements": [
+    {
+      "path": "storage/files.go",
+      "before_sha256": "a8d58e0cf0135221cdcb84559478fdaa5d0d4b9db57dfe47f9daec6bda55cc58",
+      "after_sha256": "136183288e9e482b30239ea9ade65b132649c29df68c0815b582e06d38ecacb4",
+      "content": "package storage\n\nimport \"os\"\n\nfunc Open(key string) ([]byte, error) {\n\tif key != \"public.txt\" {\n\t\treturn nil, os.ErrPermission\n\t}\n\treturn os.ReadFile(key)\n}\n\nfunc ReadNotice() ([]byte, error) {\n\treturn os.ReadFile(\"notice.txt\")\n}\n"
+    }
+  ]
+}

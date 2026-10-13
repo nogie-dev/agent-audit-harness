@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "unrestricted-payout-change",
+      "path": "Vault.sol",
+      "line": 12,
+      "quote": "payout = next;",
+      "cwe": "CWE-284",
+      "expected": "positive",
+      "rationale": "The declared policy reserves payout changes for the owner, but setPayout is external without a guard; impact needs a later owner release and funded deployment.",
+      "accepted_locations": [
+        {
+          "path": "Vault.sol",
+          "line": 11,
+          "quote": "function setPayout(address payable next) external",
+          "cwe": "CWE-284",
+          "rationale": "This entry accepts a caller-selected payout destination without the inherited owner gate."
+        },
+        {
+          "path": "Vault.sol",
+          "line": 12,
+          "quote": "payout = next;",
+          "cwe": "CWE-862",
+          "rationale": "Missing authorization is a more specific classification of the same payout policy violation."
+        },
+        {
+          "path": "Vault.sol",
+          "line": 11,
+          "quote": "function setPayout(address payable next) external",
+          "cwe": "CWE-862",
+          "rationale": "The public setter lacks the inherited owner authorization gate."
+        }
+      ]
+    },
+    {
+      "id": "owner-gated-payout-control",
+      "path": "Vault.sol",
+      "line": 16,
+      "quote": "payout = next;",
+      "cwe": "CWE-284",
+      "expected": "negative",
+      "rationale": "setPayoutByOwner applies the inherited onlyOwner modifier before this assignment; the modifier requires msg.sender to equal the constructor-set owner.",
+      "accepted_locations": [
+        {
+          "path": "Vault.sol",
+          "line": 15,
+          "quote": "function setPayoutByOwner(address payable next) external onlyOwner",
+          "cwe": "CWE-284",
+          "rationale": "The declaration carries the owner gate for this otherwise similar assignment."
+        },
+        {
+          "path": "Vault.sol",
+          "line": 16,
+          "quote": "payout = next;",
+          "cwe": "CWE-862",
+          "rationale": "A missing-authorization warning at this guarded assignment would be a false alarm."
+        },
+        {
+          "path": "Vault.sol",
+          "line": 15,
+          "quote": "function setPayoutByOwner(address payable next) external onlyOwner",
+          "cwe": "CWE-862",
+          "rationale": "A missing-authorization warning at this guarded declaration would be a false alarm."
+        }
+      ]
+    }
+  ]
+}

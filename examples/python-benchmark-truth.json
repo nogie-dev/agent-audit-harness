@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "raw-input-shell",
+      "path": "entry.py",
+      "line": 9,
+      "quote": "os.system(copied)",
+      "cwe": "CWE-78",
+      "expected": "positive",
+      "rationale": "The fixture raw function copies input() directly into os.system(); actual external exposure and runtime impact are not established."
+    },
+    {
+      "id": "constant-shell-control",
+      "path": "entry.py",
+      "line": 14,
+      "quote": "os.system(\"constant\")",
+      "cwe": "CWE-78",
+      "expected": "negative",
+      "rationale": "The fixture constant function reads input but passes a fixed literal to os.system(), so the input does not select this command."
+    }
+  ]
+}

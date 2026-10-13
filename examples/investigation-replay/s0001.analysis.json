@@ -1,0 +1,27 @@
+{
+  "candidates": [],
+  "requests": [
+    {
+      "operation": "resolve",
+      "selector": "audit.example/httpcase/cmd/server.main",
+      "reason": "The slice shows a registration but omits the listener and normal server entry. Read their source; this is still not runtime exposure evidence."
+    },
+    {
+      "operation": "source",
+      "path": "cmd/server/main.go",
+      "first_line": 11,
+      "last_line": 23,
+      "reason": "Check the listener address and server invocation against the indexed source."
+    },
+    {
+      "operation": "reachable",
+      "selector": "audit.example/httpcase/web.Private",
+      "reason": "Recheck the cross-package working set and retain external calls without claiming taint."
+    },
+    {
+      "operation": "resolve",
+      "selector": "audit.example/httpcase/auth.Authenticate",
+      "reason": "Look for the hypothesized authentication wrapper; failure to resolve it is a gap, not proof that authentication is absent."
+    }
+  ]
+}

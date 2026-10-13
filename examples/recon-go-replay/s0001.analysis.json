@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "runner/execute.go",
+      "line": 6,
+      "quote": "_ = exec.Command(program).Run()",
+      "cwe": "CWE-78",
+      "title": "Query-driven executable selection",
+      "reasoning": "Raw reads a query and service.Raw forwards Program to Execute. This source evidence warrants validation; taint and deployment are not proven.",
+      "validation_plan": "Use a separately isolated regression worker after supplying missing prerequisites."
+    }
+  ]
+}

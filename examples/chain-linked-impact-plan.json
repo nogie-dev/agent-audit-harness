@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "threat_context": "Synthetic CLI fixture: guest is untrusted; admin may redeem a valid token.",
+  "security_property": {
+    "claim": "Guest must not obtain vault-record even after a token is leaked.",
+    "source": {"path": "app.sh", "line": 21, "column": 13, "quote": "printf 'SECRET vault-record\\n'"}
+  },
+  "success_definition": "A guest leak supplies a token to a second guest request that returns vault-record, while admin and wrong-token controls behave as declared.",
+  "failure_definition": "Missing entrypoint, token leak, authorized control, wrong-token denial or final record observation leaves impact unproven.",
+  "unresolved": [],
+  "counterevidence": [],
+  "resolutions": [],
+  "stages": [
+    {
+      "id": "setup", "kind": "setup", "claim": "The authorized leak endpoint responds in the isolated environment.",
+      "source": {"path": "app.sh", "line": 6, "column": 9, "quote": "printf 'ENTRY leak\\n'"},
+      "harness_observation": {"path": "poc/chain-probe.sh", "line": 5, "column": 5, "quote": "printf 'ORACLE setup-ready\\n'"},
+      "poc_review": "/replace/with/approved-setup", "expected_outcome": "reproduced"
+    },
+    {
+      "id": "primitive", "kind": "primitive", "claim": "The guest leak endpoint returns bridge-key.",
+      "source": {"path": "app.sh", "line": 10, "column": 13, "quote": "printf 'TOKEN bridge-key\\n'"},
+      "harness_observation": {"path": "poc/chain-probe.sh", "line": 5, "column": 5, "quote": "printf 'ORACLE primitive-leaked\\n'"},
+      "poc_review": "/replace/with/approved-primitive", "expected_outcome": "reproduced"
+    },
+    {
+      "id": "control", "kind": "control", "claim": "Admin can redeem the token and an invalid token is rejected.",
+      "source": {"path": "app.sh", "line": 19, "column": 13, "quote": "printf 'SECRET vault-record\\n'"},
+      "harness_observation": {"path": "poc/chain-probe.sh", "line": 7, "column": 5, "quote": "printf 'ORACLE control-authorized\\n'"},
+      "poc_review": "/replace/with/approved-control", "expected_outcome": "not_reproduced"
+    },
+    {
+      "id": "impact", "kind": "impact", "claim": "The leaked token lets a guest obtain the exact vault-record.",
+      "source": {"path": "app.sh", "line": 21, "column": 13, "quote": "printf 'SECRET vault-record\\n'"},
+      "harness_observation": {"path": "poc/chain-probe.sh", "line": 18, "column": 5, "quote": "printf 'ORACLE chain-accepted\\n'"},
+      "poc_review": "/replace/with/approved-impact", "expected_outcome": "reproduced"
+    }
+  ]
+}

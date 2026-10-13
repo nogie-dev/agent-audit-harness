@@ -1,0 +1,44 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "guest-must-not-receive-private-record",
+        "description": "The registered handler writes a private record without checking the fixture identity.",
+        "evidence": {
+          "path": "web/handler.go",
+          "line": 12,
+          "column": 2,
+          "quote": "fmt.Fprintln(w, service.ReadPrivate())"
+        },
+        "fix": {
+          "strategy": "authorize-before-reading-private-record",
+          "description": "Deny guest requests before invoking the private-record service.",
+          "evidence": {
+            "path": "web/handler.go",
+            "line": 12,
+            "column": 2,
+            "quote": "fmt.Fprintln(w, service.ReadPrivate())"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-0374e0437552918b",
+          "verdict": "uncertain",
+          "rationale": "Additional launcher and cross-package source supports further investigation. The unresolved Authenticate query, external calls, live request, and controlled remediation remain unproven.",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "A real guest HTTP request must reach the registered handler.",
+              "evidence": null
+            },
+            {
+              "claim": "An unchanged harness must observe denial after the authorization change.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

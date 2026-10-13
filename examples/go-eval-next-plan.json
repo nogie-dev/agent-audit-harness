@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "request-selected-export",
+      "entry": "audit.example/exporter/web.Download",
+      "question": "Does the request-selected asset reach a file open without a restriction?",
+      "assumptions": ["HTTP route registration is visible, but deployment and readable files are not shown."],
+      "annotations": []
+    },
+    {
+      "id": "fixed-notice-control",
+      "entry": "audit.example/exporter/web.Notice",
+      "question": "Does the request-selected asset influence the notice file open?",
+      "assumptions": ["The constant notice path is a negative control for request-selected file access."],
+      "annotations": []
+    }
+  ]
+}

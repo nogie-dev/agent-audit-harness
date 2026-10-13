@@ -1,0 +1,26 @@
+{
+  "groups": [
+    {
+      "root_cause": null,
+      "decisions": [
+        {
+          "candidate_id": "f-4d21d231eba940b2",
+          "verdict": "uncertain",
+          "rationale": "Interface and callback calls remain unresolved. Obtain binding evidence before claiming an unsafe operation.",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "Interface and callback implementations are unresolved; obtain binding evidence.",
+              "evidence": {
+                "path": "service/flow.go",
+                "line": 28,
+                "column": 2,
+                "quote": "engine.Run(req)\n\tcallback(req)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

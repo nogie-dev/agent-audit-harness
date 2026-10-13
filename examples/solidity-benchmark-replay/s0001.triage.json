@@ -1,0 +1,40 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "full-balance-release-requires-owner",
+        "description": "releaseA exposes the full-balance transfer without the declared owner gate.",
+        "evidence": {
+          "path": "Vault.sol",
+          "line": 10,
+          "column": 9,
+          "quote": "recipient.transfer(address(this).balance)"
+        },
+        "fix": {
+          "strategy": "apply-owner-gate-before-release",
+          "description": "Apply the inherited ownerOnly gate before the releaseA body.",
+          "evidence": {
+            "path": "Vault.sol",
+            "line": 9,
+            "column": 5,
+            "quote": "function releaseA(address payable recipient) external {"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-f535d2171e452664",
+          "rationale": "The source supports a missing owner-gate hypothesis, while deployment, funding and execution remain unobserved.",
+          "verdict": "needs_validation",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "No deployed instance, funded balance or non-owner transaction has been observed.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

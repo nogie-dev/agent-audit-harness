@@ -24,6 +24,7 @@ from agent_audit_harness.recon import (
     read_recon,
     reviewed_lines,
 )
+from agent_audit_harness.triage import input_gaps
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "examples" / "go-review-target"
@@ -149,6 +150,16 @@ def test_byte_budget_preserves_gaps_and_unique_line_coverage(review):
     assert any(item["reason"] == "slice_byte_budget" for item in gaps)
     assert any(item.get("status") == "unresolved" for item in gaps)
     assert any(sum(s["omitted_counts"].values()) for s in slices)
+    for source_slice in slices:
+        full = next(h for h in recon["hypotheses"] if h["id"] == source_slice["hypothesis"]["id"])
+        retained = input_gaps(source_slice, {"graph": graph, "recon": recon})
+        assert retained["unresolved_call_ids"] == full["unknown_call_ids"]
+        assert retained["external_call_ids"] == full["external_call_ids"]
+        assert retained["unlinked_annotation_ids"] == full["unlinked_annotation_ids"]
+        assert retained["omitted_counts"] == source_slice["omitted_counts"]
+    dynamic = slices[2]
+    assert not any(c["status"] == "unresolved" for c in dynamic["calls"])
+    assert len(input_gaps(dynamic, {"graph": graph, "recon": recon})["unresolved_call_ids"]) == 2
     large, _ = make_graph_slices(graph, recon, sources, 16000)
     naive_count = sum(
         part["last_line"] - part["first_line"] + 1 for s in large for part in s["fragments"]
@@ -358,6 +369,20 @@ def test_replay_graph_review_and_resume_no_calls_and_changed_plan_refused(
     assert first["call_attempts"] == 6
     assert first["verdict_counts"] == {"needs_validation": 1, "rejected": 1, "uncertain": 1}
     assert first["confirmed_findings"] == first["validation_executions"] == 0
+    assert first["cluster_count"] == 2
+    findings = read(output / "findings.json")
+    clusters = read(output / "clusters.json")
+    shared = next(c for c in clusters if c["status"] == "mixed")
+    raw, checked, dynamic = findings
+    assert raw["cluster_id"] == checked["cluster_id"] == shared["id"]
+    assert raw["slice_id"] != checked["slice_id"]
+    assert shared["candidate_ids"] == sorted([raw["id"], checked["id"]])
+    assert checked["verdict"] == "rejected" and len(checked["counterevidence"]) == 2
+    assert dynamic["verdict"] == "uncertain" and dynamic["root_cause"] is None
+    assert (
+        dynamic["input_gaps"]["unresolved_call_ids"] == recon["hypotheses"][2]["unknown_call_ids"]
+    )
+    assert {f["id"] for f in read(output / "validation-queue.json")} == {raw["id"], dynamic["id"]}
     coverage = read(output / "coverage.json")
     assert coverage["input_mode"] == "graph_hypotheses"
     assert len(coverage["hypotheses"][2]["unknown_call_ids"]) == 2
@@ -367,6 +392,8 @@ def test_replay_graph_review_and_resume_no_calls_and_changed_plan_refused(
         TARGET, output, agent, graph_file=graph_file, recon_file=recon_file, resume=True
     )
     assert second["cache_hits"] == 6 and second["call_attempts"] == 6
+    assert read(output / "clusters.json") == clusters
+    assert read(output / "findings.json") == findings
     spec = read(SPEC)
     spec["hypotheses"][0]["assumptions"].append("new context")
     recon_file.write_text(encode(make_recon(graph, sources, spec)))
@@ -376,7 +403,9 @@ def test_replay_graph_review_and_resume_no_calls_and_changed_plan_refused(
         )
 
 
-def test_cli_recon_plan_without_source_text_and_required_pair(graph_file, tmp_path, capsys):
+def test_cli_recon_plan_without_source_text_and_required_pair(
+    graph_file, tmp_path, capsys, monkeypatch
+):
     output = tmp_path / "recon"
     assert (
         main(
@@ -394,11 +423,12 @@ def test_cli_recon_plan_without_source_text_and_required_pair(graph_file, tmp_pa
         == 0
     )
     assert json.loads(capsys.readouterr().out)["hypotheses"] == 3
+    monkeypatch.chdir(ROOT)
     assert (
         main(
             [
                 "plan",
-                str(TARGET),
+                "examples/go-review-target",
                 "--graph",
                 str(graph_file),
                 "--recon",

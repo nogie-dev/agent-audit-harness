@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "service/flow.go",
+      "line": 28,
+      "quote": "engine.Run(req)",
+      "cwe": "CWE-20",
+      "title": "Unknown Engine implementation",
+      "reasoning": "The implementation and its controls cannot be established from these fragments.",
+      "validation_plan": "Use a separately isolated regression worker after supplying missing prerequisites."
+    }
+  ]
+}

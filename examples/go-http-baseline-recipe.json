@@ -1,0 +1,119 @@
+{
+  "candidate_id": "f-0374e0437552918b",
+  "command": [
+    "/bin/sh",
+    "/input/probe.sh"
+  ],
+  "inputs": [
+    {
+      "path": "cmd/server/main.go",
+      "sha256": "646f36e4de7fe1db05543f74c1c521e7dea765ba839df00c038bd3e9b60fbdb4"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "ce8e9046025c77c875819e47d672da8e4f80d58b3d0e07d062af309ee39ef633"
+    },
+    {
+      "path": "probe.sh",
+      "sha256": "b53de4d9c56fdb54b21ec3506fb7a6111791ed5d971e2cfe7ce9e4f05d04e327"
+    },
+    {
+      "path": "service/record.go",
+      "sha256": "811ae87f10ce7d49c8a4d34d64046566822bb69dfc775fcf5e8a93b1cd388470"
+    },
+    {
+      "path": "store/record.go",
+      "sha256": "1a68e6f3b9655addec7b6d99c2307e8ae6f5c85bcdbb7341241efacafd445648"
+    },
+    {
+      "path": "web/handler.go",
+      "sha256": "45eebcbaece93a57e2df78eb3d239c2e6ca0520ebd3aa195da4651285bd5548a"
+    },
+    {
+      "path": "web/routes.go",
+      "sha256": "5db20fe36922241326715fe7ec416a212470d822c97c57513f059c6f06e8f139"
+    }
+  ],
+  "limits": {
+    "cpus": 2,
+    "memory_mb": 1024,
+    "output_bytes": 1048576,
+    "pids": 64,
+    "scratch_mb": 512,
+    "timeout_seconds": 180
+  },
+  "oracle": {
+    "completed": {
+      "line": "CHECK complete",
+      "stream": "stdout"
+    },
+    "description": "A guest receiving HTTP 200 with the exact private record violates the fixture authorization invariant; HTTP 403 with DENIED is the declared negative case. Both runs must also preserve the admin request: the exact private record must remain available to admin.",
+    "entrypoint": {
+      "description": "Launch the normal server binary, then send a loopback guest HTTP GET through its listener and registered ServeMux.",
+      "invocation": {
+        "column": 5,
+        "line": 52,
+        "path": "probe.sh",
+        "quote": "response, err := client.Do(request)"
+      },
+      "kind": "entrypoint",
+      "observation": {
+        "line": "TARGET guest stdout \"ENTRY HTTP /private\\n\"",
+        "stream": "stdout"
+      },
+      "source": {
+        "column": 1,
+        "line": 10,
+        "path": "web/handler.go",
+        "quote": "func Private(w http.ResponseWriter, r *http.Request) {"
+      }
+    },
+    "expected_exit_codes": [
+      0
+    ],
+    "harness_path": "probe.sh",
+    "not_reproduced": {
+      "line": "ORACLE access-denied",
+      "stream": "stdout"
+    },
+    "reproduced": {
+      "line": "ORACLE unauthorized-read",
+      "stream": "stdout"
+    },
+    "resolutions": [
+      {
+        "issue_id": "vi-961f083e2b93a1ce",
+        "requirement": "entrypoint",
+        "rationale": "The external ServeMux.HandleFunc registration implementation is not graphed. The guest GET through the normal listener reaching the declared handler marker evidences this registration path for this fixture request only; arbitrary registration or deployment behavior stays unproven."
+      },
+      {
+        "issue_id": "vi-cddf62cddb93fe3c",
+        "rationale": "The external fmt.Fprintln implementation is not graphed. HTTP 200 and the exact private-record body evidence its delivery in this guest request only.",
+        "requirement": "reproduction"
+      },
+      {
+        "issue_id": "vi-dc8039d932a1c603",
+        "rationale": "The external fmt.Println implementation is not graphed. Its declared marker is observed from the real server in this request only; this does not resolve arbitrary standard-library behavior.",
+        "requirement": "entrypoint"
+      },
+      {
+        "issue_id": "vi-e5842e69848622bd",
+        "rationale": "The same guest GET and oracle must produce private data before and explicit HTTP 403 denial after the source change.",
+        "requirement": "fix_comparison"
+      },
+      {
+        "issue_id": "vi-ef325864ea70bbfc",
+        "rationale": "The actual guest GET emits the handler marker before the response outcome.",
+        "requirement": "entrypoint"
+      }
+    ],
+    "source": {
+      "column": 2,
+      "line": 12,
+      "path": "web/handler.go",
+      "quote": "fmt.Fprintln(w, service.ReadPrivate())"
+    }
+  },
+  "purpose": "Compare a synthetic guest GET through the real Go listener and ServeMux under an unchanged supplied harness.",
+  "schema_version": 1
+}

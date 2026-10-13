@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "path": "web/handler.go",
+      "line": 12,
+      "quote": "fmt.Fprintln(w, service.ReadPrivate())",
+      "cwe": "CWE-862",
+      "title": "Private record returned without authorization",
+      "reasoning": "Register binds /private to Private. The handler calls service.ReadPrivate and store.Private across packages and writes the record without an authorization branch. Graph calls do not establish actual HTTP delivery.",
+      "validation_plan": "Use the separately supplied frozen HTTP request harness only inside the isolated worker; compare guest responses before and after an authorization change."
+    }
+  ]
+}

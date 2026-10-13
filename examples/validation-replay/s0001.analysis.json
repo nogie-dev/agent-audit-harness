@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-250",
+      "line": 4,
+      "path": "check.sh",
+      "quote": "[ \"$(id -u)\" = 65532 ]",
+      "reasoning": "The fixture asserts a non-root UID; runtime enforcement needs observation.",
+      "title": "Verify unprivileged worker execution",
+      "validation_plan": "Run the explicit containment recipe in the isolated worker."
+    }
+  ]
+}

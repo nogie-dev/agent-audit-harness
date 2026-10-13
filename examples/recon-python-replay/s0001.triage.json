@@ -1,0 +1,40 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "shell-input-must-not-select-command",
+        "description": "Copied input reaches a shell command under the declared intraprocedural model.",
+        "evidence": {
+          "path": "entry.py",
+          "line": 9,
+          "column": 5,
+          "quote": "os.system(copied)"
+        },
+        "fix": {
+          "strategy": "use-fixed-argv-without-shell",
+          "description": "Use a fixed executable and validated arguments without a shell.",
+          "evidence": {
+            "path": "entry.py",
+            "line": 9,
+            "column": 5,
+            "quote": "os.system(copied)"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-592ffe68fe90e240",
+          "rationale": "The source-backed intraprocedural trace supports a testable hypothesis. Declared models do not prove exposure, runtime execution or impact.",
+          "verdict": "needs_validation",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "Exposure, runtime execution and impact need isolated validation.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

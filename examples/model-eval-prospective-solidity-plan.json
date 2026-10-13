@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "public-payout-setting",
+      "entry": "Vault.sol:Vault.setPayout",
+      "question": "Can a non-owner set the destination later used by release?",
+      "assumptions": ["Owner-only payout setting is the declared policy; deployment, funding, and a later owner release are unverified."],
+      "annotations": []
+    },
+    {
+      "id": "owner-payout-control",
+      "entry": "Vault.sol:Vault.setPayoutByOwner",
+      "question": "Does the inherited onlyOwner modifier gate this payout change?",
+      "assumptions": ["This is a negative control for unauthorized payout setting, not a claim about all contract behavior."],
+      "annotations": []
+    }
+  ]
+}

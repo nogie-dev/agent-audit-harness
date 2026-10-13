@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "guest-private-record",
+      "question": "Can a guest HTTP request receive a private record without authorization?",
+      "entry": "audit.example/httpcase/web.Private",
+      "assumptions": [
+        "X-Role is a synthetic fixture identity, not a production authentication mechanism.",
+        "Handler registration and direct calls alone do not prove a live request or response."
+      ],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/httpcase/web.Private",
+          "claim": "The supplied handler receives an HTTP request.",
+          "evidence": {"path": "web/handler.go", "line": 10, "quote": "func Private(w http.ResponseWriter, r *http.Request) {"}
+        },
+        {
+          "role": "sink",
+          "function": "audit.example/httpcase/web.Private",
+          "claim": "The private record is written to the response without an authorization branch.",
+          "evidence": {"path": "web/handler.go", "line": 12, "quote": "fmt.Fprintln(w, service.ReadPrivate())"}
+        },
+        {
+          "role": "boundary",
+          "function": "audit.example/httpcase/store.Private",
+          "claim": "This fixture record is declared private; runtime delivery requires validation.",
+          "evidence": {"path": "store/record.go", "line": 4, "quote": "return \"DATA private-record\""}
+        }
+      ]
+    }
+  ]
+}

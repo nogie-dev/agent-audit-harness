@@ -3,7 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_audit_harness.agents import CODEX_CONFIG, CodexAgent
+from agent_audit_harness.agents import CODEX_CONFIG, CodexAgent, strip_optional_nulls
+
+ROOT = Path(__file__).resolve().parents[1]
 
 FAKE_CODEX = """#!/usr/bin/env python3
 import json, os, sys, time
@@ -29,7 +31,14 @@ if "sleep-fixture" in sys.argv:
     time.sleep(20)
 if "fail-fixture" in sys.argv:
     raise SystemExit(3)
-destination.write_text(json.dumps({"candidates": []}))
+if "noisy-fixture" in sys.argv:
+    sys.stdout.write("x" * 2048)
+    sys.stdout.flush()
+    time.sleep(20)
+destination.write_text(json.dumps(
+    {"candidates": [], "requests": None, "model_proposals": None}
+    if "nullable-fixture" in sys.argv else {"candidates": []}
+))
 print(json.dumps({"type": "turn.completed", "usage": {
     "input_tokens": 100, "cached_input_tokens": 20, "output_tokens": 10,
 }}))
@@ -65,6 +74,25 @@ def test_codex_adapter_uses_stdin_isolated_cwd_strict_config_and_restricted_tool
     assert "--dangerously-bypass-approvals-and-sandbox" not in capture["argv"]
 
 
+def test_codex_strict_schema_preserves_optional_contract_and_raw_reply(tmp_path, monkeypatch):
+    agent = fake_codex(tmp_path, monkeypatch, "nullable-fixture")
+    directory = tmp_path / "call"
+    directory.mkdir()
+    schema = json.loads((ROOT / "src/agent_audit_harness/schemas/analysis.json").read_text())
+    reply = agent.call("analysis", "s0001", "input", schema, directory)
+    sent = json.loads((directory / "schema.json").read_text())
+    assert set(sent["required"]) == set(sent["properties"])
+    assert sent["properties"]["model_proposals"]["anyOf"][1] == {"type": "null"}
+    assert sent["properties"]["requests"]["anyOf"][0]["items"]["anyOf"][1]["properties"][
+        "operation"
+    ] == {"const": "source", "type": "string"}
+    assert set(schema["required"]) == {"candidates"}
+    assert json.loads((directory / "raw-response.json").read_text())["requests"] is None
+    assert reply.data == {"candidates": []}
+    required_null = {"properties": {"root_cause": {}}, "required": ["root_cause"]}
+    assert strip_optional_nulls({"root_cause": None}, required_null) == {"root_cause": None}
+
+
 def test_failed_codex_call_cannot_reuse_old_raw_reply(tmp_path, monkeypatch):
     agent = fake_codex(tmp_path, monkeypatch, "fail-fixture")
     directory = tmp_path / "call"
@@ -84,6 +112,48 @@ def test_timeout_kills_process_group(tmp_path, monkeypatch):
     with pytest.raises(subprocess.TimeoutExpired):
         agent.call("analysis", "s0001", "input", {}, directory)
     assert not (directory / "raw-response.json").exists()
+
+
+def test_codex_log_limit_kills_process_group(tmp_path, monkeypatch):
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_CODEX_LOG_BYTES", 1024)
+    agent = fake_codex(tmp_path, monkeypatch, "noisy-fixture")
+    directory = tmp_path / "call"
+    directory.mkdir()
+    with pytest.raises(ValueError, match="logs exceed 8 MiB"):
+        agent.call("analysis", "s0001", "input", {}, directory)
+    assert (directory / "events.jsonl").stat().st_size > 1024
+    assert not (directory / "raw-response.json").exists()
+
+
+def test_replay_agent_bounds_file_count_size_total_and_symlinks(tmp_path, monkeypatch):
+    from agent_audit_harness.agents import ReplayAgent
+
+    replay = tmp_path / "replay"
+    replay.mkdir()
+    (replay / "a.json").write_text("{}")
+    (replay / "b.json").write_text("{}")
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_FILES", 1)
+    with pytest.raises(ValueError, match="exceeds 1 JSON files"):
+        ReplayAgent(replay)
+
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_FILES", 128)
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_RESPONSE_BYTES", 1)
+    with pytest.raises(ValueError, match="response exceeds 128 KiB"):
+        ReplayAgent(replay)
+
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_RESPONSE_BYTES", 128 * 1024)
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_TOTAL_BYTES", 3)
+    with pytest.raises(ValueError, match="responses exceed 8 MiB total"):
+        ReplayAgent(replay)
+
+    monkeypatch.setattr("agent_audit_harness.agents.MAX_REPLAY_TOTAL_BYTES", 8 * 1024 * 1024)
+    (replay / "a.json").unlink()
+    (replay / "b.json").unlink()
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}")
+    (replay / "linked.json").symlink_to(outside)
+    with pytest.raises(ValueError, match="cannot read regular replay response"):
+        ReplayAgent(replay)
 
 
 def test_ignored_restriction_fails_before_a_model_call(tmp_path, monkeypatch):

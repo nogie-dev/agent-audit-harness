@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "threat_context", "security_property", "success_definition", "failure_definition", "unresolved", "counterevidence", "resolutions", "stages"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "threat_context": {"type": "string", "minLength": 1, "maxLength": 3000},
+    "security_property": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claim", "source"],
+      "properties": {
+        "claim": {"type": "string", "minLength": 1, "maxLength": 3000},
+        "source": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "success_definition": {"type": "string", "minLength": 1, "maxLength": 3000},
+    "failure_definition": {"type": "string", "minLength": 1, "maxLength": 3000},
+    "unresolved": {
+      "type": "array", "maxItems": 32,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2000}
+    },
+    "counterevidence": {
+      "type": "array", "maxItems": 32,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["claim", "source"],
+        "properties": {
+          "claim": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "source": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/evidence"}]}
+        }
+      }
+    },
+    "resolutions": {
+      "type": "array", "maxItems": 32,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "index", "stage_id", "rationale"],
+        "properties": {
+          "kind": {"enum": ["unresolved", "counterevidence"]},
+          "index": {"type": "integer", "minimum": 0},
+          "stage_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"},
+          "rationale": {"type": "string", "minLength": 1, "maxLength": 2000}
+        }
+      }
+    },
+    "stages": {
+      "type": "array", "minItems": 4, "maxItems": 8,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "kind", "claim", "source", "harness_observation", "poc_review", "expected_outcome"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"},
+          "kind": {"enum": ["setup", "primitive", "measurement", "control", "impact"]},
+          "claim": {"type": "string", "minLength": 1, "maxLength": 3000},
+          "source": {"$ref": "#/$defs/evidence"},
+          "harness_observation": {"$ref": "#/$defs/evidence"},
+          "poc_review": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "expected_outcome": {"enum": ["reproduced", "not_reproduced"]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "line", "column", "quote"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "line": {"type": "integer", "minimum": 1},
+        "column": {"type": "integer", "minimum": 1},
+        "quote": {"type": "string", "minLength": 1, "maxLength": 3000}
+      }
+    }
+  }
+}

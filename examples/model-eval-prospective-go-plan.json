@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "selected-file",
+      "entry": "audit.example/preview/web.Selected",
+      "question": "Can a request-selected name reach a file read without a path restriction?",
+      "assumptions": ["Route registration is visible, but a running server and readable files are not shown."],
+      "annotations": []
+    },
+    {
+      "id": "public-file-control",
+      "entry": "audit.example/preview/web.Public",
+      "question": "Does the request name select the file read on the Public path?",
+      "assumptions": ["This path is a negative control for request-selected file access."],
+      "annotations": []
+    }
+  ]
+}

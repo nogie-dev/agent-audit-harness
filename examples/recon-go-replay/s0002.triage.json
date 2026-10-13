@@ -1,0 +1,59 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "executable-selection-must-be-restricted",
+        "description": "The shared executor accepts an arbitrary program; entry-path controls need separate judgment.",
+        "evidence": {
+          "path": "runner/execute.go",
+          "line": 6,
+          "column": 6,
+          "quote": "exec.Command(program)"
+        },
+        "fix": {
+          "strategy": "allowlist-executable",
+          "description": "Restrict executable selection at the shared executor boundary.",
+          "evidence": {
+            "path": "runner/execute.go",
+            "line": 6,
+            "column": 6,
+            "quote": "exec.Command(program)"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-ad335edbaa3c13ac",
+          "verdict": "rejected",
+          "rationale": "Checked returns unless allowed succeeds; allowed only accepts date. This rejects the unchecked-dispatch hypothesis, not every issue in the component.",
+          "counterevidence": [
+            {
+              "claim": "Checked returns before execution unless allowed succeeds.",
+              "evidence": {
+                "path": "service/flow.go",
+                "line": 13,
+                "column": 2,
+                "quote": "if !allowed(req.Program) {\n\t\treturn\n\t}"
+              }
+            },
+            {
+              "claim": "The allowlist accepts only the constant executable date.",
+              "evidence": {
+                "path": "service/flow.go",
+                "line": 20,
+                "column": 2,
+                "quote": "return program == \"date\""
+              }
+            }
+          ],
+          "unresolved": [
+            {
+              "claim": "Other entry paths to the shared executor are outside this rejection.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

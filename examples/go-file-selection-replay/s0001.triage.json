@@ -1,0 +1,28 @@
+{
+  "groups": [
+    {
+      "root_cause": {
+        "invariant": "request-must-not-select-private-file",
+        "description": "The download handler accepts an arbitrary request-selected filename before the file open.",
+        "evidence": {"path": "storage/files.go", "line": 6, "column": 9, "quote": "os.ReadFile(key)"},
+        "fix": {
+          "strategy": "allowlist-public-downloads-before-file-open",
+          "description": "Permit the declared public file and deny other request-selected names before os.ReadFile.",
+          "evidence": {"path": "storage/files.go", "line": 6, "column": 9, "quote": "os.ReadFile(key)"}
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-243fee58e08fd1ad",
+          "verdict": "uncertain",
+          "rationale": "The direct call and argument path supports a candidate; a live HTTP request and fixed behavior require separate execution evidence.",
+          "counterevidence": [],
+          "unresolved": [
+            {"claim": "A loopback HTTP request through the registered route must read the private fixture file.", "evidence": null},
+            {"claim": "The same request must be denied after the allowlist while public and constant-notice controls still work.", "evidence": null}
+          ]
+        }
+      ]
+    }
+  ]
+}

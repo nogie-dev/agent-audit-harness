@@ -1,0 +1,165 @@
+{
+  "candidate_id": "f-7d72725d4bf39b4b",
+  "evidence": {
+    "column": 5,
+    "line": 22,
+    "path": "app.c",
+    "quote": "puts(\"DATA private-record\");"
+  },
+  "recipe": {
+    "attachments": [
+      {
+        "content": "set -eu\ncase \"$1\" in\n    release)\n        /usr/bin/cc -std=c11 -O2 -DAUDIT_GUARD=0 /input/app.c -o /work/app\n        configuration='CONFIG optimization=enabled guard=0'\n        ;;\n    guarded)\n        /usr/bin/cc -std=c11 -O0 -DAUDIT_GUARD=1 /input/app.c -o /work/app\n        configuration='CONFIG optimization=disabled guard=1'\n        ;;\n    *) exit 2 ;;\nesac\n/work/app guest > /work/guest.stdout\n/work/app admin > /work/admin.stdout\nrecord() {\n    printf 'TARGET %s bytes ' \"$1\"\n    /usr/bin/base64 -w0 \"/work/$1.stdout\"\n    printf '\\n'\n    while IFS= read -r line || [ -n \"$line\" ]; do\n        printf 'TARGET %s stdout %s\\n' \"$1\" \"$line\"\n    done < \"/work/$1.stdout\"\n}\nrecord guest\nrecord admin\nif ! printf '%s\\nENTRY request-handler\\nDATA private-record\\n' \"$configuration\" | /usr/bin/cmp -s - /work/admin.stdout; then\n    printf 'CONTROL admin failed\\nCHECK complete\\n'\n    exit 0\nfi\nprintf 'CONTROL admin passed\\n'\nif printf '%s\\nENTRY request-handler\\nDATA private-record\\n' \"$configuration\" | /usr/bin/cmp -s - /work/guest.stdout; then\n    printf 'ORACLE unauthorized-read\\n'\nelif printf '%s\\nENTRY request-handler\\nDENIED\\n' \"$configuration\" | /usr/bin/cmp -s - /work/guest.stdout; then\n    printf 'ORACLE access-denied\\n'\nelse\n    printf 'ORACLE unknown-response\\n'\nfi\nprintf 'CHECK complete\\n'\n",
+        "path": "poc/probe.sh",
+        "sha256": "bc63b29dc6068e497e11fec617451c74337142e77619e2483cf88d662f31e06c"
+      }
+    ],
+    "candidate_id": "f-7d72725d4bf39b4b",
+    "command": [
+      "/bin/sh",
+      "/input/poc/probe.sh"
+    ],
+    "configurations": [
+      {
+        "description": "Compile and observe the target settings through the frozen probe.",
+        "id": "release",
+        "invocation": {
+          "column": 9,
+          "line": 4,
+          "path": "poc/probe.sh",
+          "quote": "/usr/bin/cc -std=c11 -O2 -DAUDIT_GUARD=0 /input/app.c -o /work/app"
+        },
+        "observation": {
+          "line": "TARGET guest stdout CONFIG optimization=enabled guard=0",
+          "stream": "stdout"
+        },
+        "settings": {
+          "AUDIT_GUARD": "0",
+          "optimization": "enabled"
+        },
+        "source": {
+          "column": 5,
+          "line": 26,
+          "path": "app.c",
+          "quote": "printf(\"CONFIG optimization=%s guard=%d\\n\", OPTIMIZATION, AUDIT_GUARD);"
+        }
+      },
+      {
+        "description": "Compile and observe the target settings through the frozen probe.",
+        "id": "guarded",
+        "invocation": {
+          "column": 9,
+          "line": 8,
+          "path": "poc/probe.sh",
+          "quote": "/usr/bin/cc -std=c11 -O0 -DAUDIT_GUARD=1 /input/app.c -o /work/app"
+        },
+        "observation": {
+          "line": "TARGET guest stdout CONFIG optimization=disabled guard=1",
+          "stream": "stdout"
+        },
+        "settings": {
+          "AUDIT_GUARD": "1",
+          "optimization": "disabled"
+        },
+        "source": {
+          "column": 5,
+          "line": 26,
+          "path": "app.c",
+          "quote": "printf(\"CONFIG optimization=%s guard=%d\\n\", OPTIMIZATION, AUDIT_GUARD);"
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "path": "app.c",
+        "sha256": "4c61236050c941832f6dbe61dd2726b74b184739be1f0e6ab3bc5bded8b246c6"
+      }
+    ],
+    "limits": {
+      "cpus": 0.5,
+      "memory_mb": 128,
+      "output_bytes": 1048576,
+      "pids": 32,
+      "scratch_mb": 16,
+      "timeout_seconds": 10
+    },
+    "oracle": {
+      "completed": {
+        "line": "CHECK complete",
+        "stream": "stdout"
+      },
+      "description": "A guest receiving DATA private-record violates the declared authorization invariant. Both runs must also preserve the admin request: the exact private record must remain available to admin.",
+      "entrypoint": {
+        "description": "Invoke the program CLI with a guest request through its normal dispatcher.",
+        "invocation": {
+          "column": 1,
+          "line": 13,
+          "path": "poc/probe.sh",
+          "quote": "/work/app guest > /work/guest.stdout"
+        },
+        "kind": "entrypoint",
+        "observation": {
+          "line": "TARGET guest stdout ENTRY request-handler",
+          "stream": "stdout"
+        },
+        "source": {
+          "column": 1,
+          "line": 14,
+          "path": "app.c",
+          "quote": "static void serve_request(const char *role) {"
+        }
+      },
+      "expected_exit_codes": [
+        0
+      ],
+      "harness_path": "poc/probe.sh",
+      "not_reproduced": {
+        "line": "ORACLE access-denied",
+        "stream": "stdout"
+      },
+      "reproduced": {
+        "line": "ORACLE unauthorized-read",
+        "stream": "stdout"
+      },
+      "resolutions": [
+        {
+          "issue_id": "vi-2836e626c7f432d5",
+          "rationale": "Resolve only the supplied issue when this frozen runtime gate is evidenced.",
+          "requirement": "entrypoint"
+        },
+        {
+          "issue_id": "vi-5a98ad801324f0c3",
+          "rationale": "Resolve only the supplied issue when this frozen runtime gate is evidenced.",
+          "requirement": "configuration"
+        },
+        {
+          "issue_id": "vi-67daa95bbb019ef5",
+          "rationale": "Resolve only the supplied issue when this frozen runtime gate is evidenced.",
+          "requirement": "entrypoint"
+        },
+        {
+          "issue_id": "vi-c1235edf7ceadd0d",
+          "rationale": "Resolve only the supplied issue when this frozen runtime gate is evidenced.",
+          "requirement": "fix_comparison"
+        },
+        {
+          "issue_id": "vi-e6cc35d73d5a8dab",
+          "rationale": "Resolve only the supplied issue when this frozen runtime gate is evidenced.",
+          "requirement": "entrypoint"
+        }
+      ],
+      "source": {
+        "column": 5,
+        "line": 22,
+        "path": "app.c",
+        "quote": "puts(\"DATA private-record\");"
+      }
+    },
+    "purpose": "Compare a synthetic guest authorization request under an unchanged harness.",
+    "schema_version": 1
+  },
+  "requirements": [
+    "Prepared Linux image with /usr/bin/cc, /bin/sh, /usr/bin/cmp and GNU /usr/bin/base64."
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "cross-module-shell",
+      "entry": "entry.across_files",
+      "question": "Does the direct input value reach the shell sink in worker.execute?",
+      "assumptions": ["Static role matches and syntax-value paths do not prove runtime execution or attacker exposure."],
+      "annotations": []
+    },
+    {
+      "id": "constant-shell-control",
+      "entry": "entry.constant",
+      "question": "Does input influence the literal shell command?",
+      "assumptions": ["The constant command is a negative syntax-value control."],
+      "annotations": []
+    }
+  ]
+}

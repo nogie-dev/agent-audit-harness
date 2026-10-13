@@ -1,0 +1,43 @@
+{
+  "hypotheses": [
+    {
+      "id": "release-a-access",
+      "question": "Does the externally visible releaseA allow a non-owner to direct the full balance?",
+      "entry": "a99e632a9992fa4331dfde7b07faf36c35e72786eb7cb9a75289dda8e81ad312",
+      "assumptions": ["The owner-only release policy is a synthetic research assumption, not deployment proof."],
+      "annotations": [],
+      "selection": {
+        "priority": 1,
+        "rationale": "Investigate this source-visible entry first because its body transfers the full balance without a modifier; actual deployment and funding remain unknown.",
+        "entry_evidence": {
+          "path": "Vault.sol",
+          "line": 9,
+          "column": 5,
+          "quote": "function releaseA"
+        },
+        "fact_ids": ["rf-cc47dc13f16df25655bf00df"],
+        "unresolved": ["Deployment, proxy routing, contract balance and caller reachability are unverified."]
+      }
+    },
+    {
+      "id": "release-b-control",
+      "question": "Does the inherited ownerOnly modifier execute before releaseB transfers the balance?",
+      "entry": "edd095fd3822a864c290467239f003fb0c17dbfec4face95dae68d1559dcdf14",
+      "assumptions": ["Modifier application and source condition require review; no EVM run is supplied."],
+      "annotations": [],
+      "selection": {
+        "priority": 2,
+        "rationale": "Compare the same transfer under the source-visible ownerOnly modifier after investigating releaseA.",
+        "entry_evidence": {
+          "path": "Vault.sol",
+          "line": 13,
+          "column": 5,
+          "quote": "function releaseB"
+        },
+        "fact_ids": ["rf-775b00c7108dc5ab8de03a93"],
+        "unresolved": ["Deployment and effective authorization have not been observed at runtime."]
+      }
+    }
+  ],
+  "unresolved": ["The externally visible receive function is not selected for analysis in this bounded plan."]
+}

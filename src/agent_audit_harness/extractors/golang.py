@@ -15,22 +15,25 @@ from .process import run_tool
 HELPER = Path(__file__).parent / "go_helper"
 
 
-def entry_registrations(graph: dict, function_id: str) -> list[dict]:
+def entry_registrations(graph: dict, function_id: str | None = None) -> list[dict]:
     """Typed callback registration facts; neither invocation nor network exposure."""
     apis = {"net/http.HandleFunc", "net/http.ServeMux.HandleFunc"}
     return [
-        {"call_id": call["id"], "caller": call["caller"], "api": call["callee_name"]}
+        {
+            "call_id": call["id"],
+            "caller": call["caller"],
+            "api": call["callee_name"],
+            **({"function": argument["function"]} if function_id is None else {}),
+        }
         for call in graph["calls"]
         if call["provenance"] == "go_types"
         and call["status"] == "external"
         and call["dispatch"] == "direct"
         and call["callee_name"] in apis
-        and any(
-            argument["index"] == 1
-            and argument["status"] == "resolved"
-            and argument["function"] == function_id
-            for argument in call.get("function_arguments", [])
-        )
+        for argument in call.get("function_arguments", [])
+        if argument["index"] == 1
+        and argument["status"] == "resolved"
+        and (function_id is None or argument["function"] == function_id)
     ]
 
 
@@ -177,6 +180,8 @@ def extract(
             "package-level initializer calls and reflection are not modeled",
             "embedded assets and assembly are not copied into the source snapshot",
             "call reachability is not data flow or attacker reachability",
+            "argument transfers cover bounded direct non-generic function calls; "
+            "methods, variadics and arity mismatches retain gaps",
             "Go source positions require LF/CRLF; bare CR is rejected",
         ],
     }

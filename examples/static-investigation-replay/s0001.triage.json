@@ -1,0 +1,21 @@
+{
+  "groups": [
+    {
+      "root_cause": null,
+      "decisions": [
+        {
+          "candidate_id": "f-f9504e1403d9f737",
+          "rationale": "The new source quote supports investigation of a shell sink. Its callback and static propagation gaps remain independent limits; no test has run.",
+          "verdict": "uncertain",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "The callback implementation and the provenance of changed have not been established.",
+              "evidence": {"path": "entry.py", "line": 25, "column": 5, "quote": "os.system(changed)"}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

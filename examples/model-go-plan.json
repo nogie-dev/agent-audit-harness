@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "hypotheses": [{
+    "id": "custom-vocabulary", "entry": "audit.example/models/client.Entry",
+    "question": "Can declared Go wrapper models report a local flow into command preparation while keeping execution and exposure unproven?",
+    "assumptions": ["The fixture only prepares a command; it does not demonstrate command execution."],
+    "annotations": []
+  }]
+}

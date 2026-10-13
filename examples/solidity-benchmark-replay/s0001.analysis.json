@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "cwe": "CWE-284",
+      "line": 10,
+      "path": "Vault.sol",
+      "quote": "recipient.transfer(address(this).balance)",
+      "reasoning": "releaseA is external and transfers the full balance to its recipient without an access modifier. The declared owner-only policy makes this a testable access-control candidate; deployment, funding and runtime behavior remain unverified.",
+      "title": "Full-balance release lacks owner gate",
+      "validation_plan": "With an approved isolated EVM recipe, fund the fixture and compare non-owner release before and after a controlled owner gate; retain deployment and transaction evidence."
+    }
+  ]
+}

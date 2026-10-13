@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "python-input-shell", "language": "python", "cwe": "CWE-78",
+      "source_patterns": ["input(...)"], "sink_patterns": ["os.system(...)"],
+      "sanitizer_patterns": [],
+      "assumptions": ["input() is treated as untrusted input; os.system() is a shell sink.", "Pattern matches do not prove runtime binding or attacker exposure."]
+    },
+    {
+      "id": "go-env-shell", "language": "go", "cwe": "CWE-78",
+      "source_patterns": ["os.Getenv(...)"], "sink_patterns": ["exec.Command(\"sh\", \"-c\", ...)"],
+      "sanitizer_patterns": [],
+      "assumptions": ["Environment input is treated as untrusted for this rule; deployment control is unknown.", "Command construction is a sink candidate; process execution is not proven."]
+    },
+    {
+      "id": "go-http-file-selection", "language": "go", "cwe": "CWE-73",
+      "source_patterns": ["$REQ.URL.Query().Get(...)"], "sink_patterns": ["os.ReadFile(...)"],
+      "sanitizer_patterns": [],
+      "assumptions": ["HTTP query extraction is a possible input source; actual routing and caller control are unverified.", "File reads are sink candidates; matching source and sink in different functions does not prove data flow."]
+    }
+  ]
+}

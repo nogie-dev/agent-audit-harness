@@ -1,9 +1,40 @@
 {
-  "decisions": [
+  "groups": [
     {
-      "candidate_id": "f-76b114e43eab8f7f",
-      "verdict": "needs_validation",
-      "rationale": "There is no local destination-length guard in this synthetic function. A boundary test is justified, but neither a caller nor a deployed entry point is present. No test has been executed and the finding remains unconfirmed."
+      "root_cause": {
+        "invariant": "copy-length-must-fit-destination",
+        "description": "The local copy length is not bounded to the destination.",
+        "evidence": {
+          "path": "parser.c",
+          "line": 6,
+          "column": 5,
+          "quote": "memcpy(buf, data, length);"
+        },
+        "fix": {
+          "strategy": "check-destination-length",
+          "description": "Check length against the destination size before copying.",
+          "evidence": {
+            "path": "parser.c",
+            "line": 6,
+            "column": 5,
+            "quote": "memcpy(buf, data, length);"
+          }
+        }
+      },
+      "decisions": [
+        {
+          "candidate_id": "f-76b114e43eab8f7f",
+          "verdict": "needs_validation",
+          "rationale": "There is no local destination-length guard in this synthetic function. A boundary test is justified, but neither a caller nor a deployed entry point is present. No test has been executed and the finding remains unconfirmed.",
+          "counterevidence": [],
+          "unresolved": [
+            {
+              "claim": "No caller or deployment exposure is supplied.",
+              "evidence": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }

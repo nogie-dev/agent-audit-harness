@@ -1,0 +1,102 @@
+{
+  "candidate_id": "f-d71ac5092c87347c",
+  "command": [
+    "/bin/sh",
+    "/input/probe.sh"
+  ],
+  "inputs": [
+    {
+      "path": "app.sh",
+      "sha256": "ed3dd24b590785820ed87b4e0e464841bcf2666721f0989bd984cfd53e9adfdb"
+    },
+    {
+      "path": "probe.sh",
+      "sha256": "880b2ce78412ed3bd7f90ca631ada9b46273fd9df71b2e53712d0cf3734310a7"
+    }
+  ],
+  "limits": {
+    "cpus": 0.5,
+    "memory_mb": 128,
+    "output_bytes": 1048576,
+    "pids": 32,
+    "scratch_mb": 16,
+    "timeout_seconds": 10
+  },
+  "oracle": {
+    "completed": {
+      "line": "CHECK complete",
+      "stream": "stdout"
+    },
+    "description": "A guest receiving DATA private-record violates the declared authorization invariant. Both runs must also preserve the admin request: the exact private record must remain available to admin.",
+    "entrypoint": {
+      "description": "Invoke the program CLI with a guest request through its normal dispatcher.",
+      "invocation": {
+        "column": 1,
+        "line": 2,
+        "path": "probe.sh",
+        "quote": "/bin/sh /input/app.sh guest > /work/guest.stdout"
+      },
+      "kind": "entrypoint",
+      "observation": {
+        "line": "TARGET guest stdout ENTRY request-handler",
+        "stream": "stdout"
+      },
+      "source": {
+        "column": 1,
+        "line": 2,
+        "path": "app.sh",
+        "quote": "serve_request() {"
+      }
+    },
+    "expected_exit_codes": [
+      0
+    ],
+    "harness_path": "probe.sh",
+    "not_reproduced": {
+      "line": "ORACLE access-denied",
+      "stream": "stdout"
+    },
+    "reproduced": {
+      "line": "ORACLE unauthorized-read",
+      "stream": "stdout"
+    },
+    "resolutions": [
+      {
+        "issue_id": "vi-67daa95bbb019ef5",
+        "rationale": "Resolve only when the corresponding runtime gate is satisfied.",
+        "requirement": "entrypoint"
+      },
+      {
+        "issue_id": "vi-c1235edf7ceadd0d",
+        "rationale": "Resolve only when the corresponding runtime gate is satisfied.",
+        "requirement": "fix_comparison"
+      },
+      {
+        "issue_id": "vi-337373206ea44f47",
+        "requirement": "entrypoint",
+        "rationale": "The frozen fixture probe must traverse the real CLI request dispatch and observe the declared handler marker in each before/after run. This resolves the imported runtime gap for the supplied guest request only."
+      },
+      {
+        "issue_id": "vi-6af18939a85ab977",
+        "requirement": "entrypoint",
+        "rationale": "The frozen fixture probe must traverse the real CLI request dispatch and observe the declared handler marker in each before/after run. This resolves the imported runtime gap for the supplied guest request only."
+      }
+    ],
+    "source": {
+      "column": 5,
+      "line": 5,
+      "path": "app.sh",
+      "quote": "printf 'DATA private-record\\n'"
+    }
+  },
+  "purpose": "Compare a synthetic guest authorization request under an unchanged harness.",
+  "replacements": [
+    {
+      "after_sha256": "184ba840348beb4c3c230979edfbebc671afaa03ac5b06d6e73cd705599cbe8f",
+      "before_sha256": "ed3dd24b590785820ed87b4e0e464841bcf2666721f0989bd984cfd53e9adfdb",
+      "content": "# Synthetic authorization fixture; execute only in the isolated worker.\nserve_request() {\n    role=$1\n    printf 'ENTRY request-handler\\n'\n    if [ \"$role\" != admin ]; then\n        printf 'DENIED\\n'\n        return\n    fi\n    printf 'DATA private-record\\n'\n}\nserve_request \"$1\"\n",
+      "path": "app.sh"
+    }
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,44 @@
+{
+  "groups": [
+    {
+      "decisions": [
+        {
+          "candidate_id": "f-d71ac5092c87347c",
+          "counterevidence": [],
+          "rationale": "Source evidence requires runtime request and fix comparison evidence.",
+          "unresolved": [
+            {
+              "claim": "Runtime request reachability must be observed.",
+              "evidence": null
+            },
+            {
+              "claim": "The authorization change needs a before/after comparison.",
+              "evidence": null
+            }
+          ],
+          "verdict": "uncertain"
+        }
+      ],
+      "root_cause": {
+        "description": "Guest access must be denied before producing the record.",
+        "evidence": {
+          "column": 5,
+          "line": 5,
+          "path": "app.sh",
+          "quote": "printf 'DATA private-record\\n'"
+        },
+        "fix": {
+          "description": "Reject non-admin requests before the response.",
+          "evidence": {
+            "column": 5,
+            "line": 5,
+            "path": "app.sh",
+            "quote": "printf 'DATA private-record\\n'"
+          },
+          "strategy": "enforce-authorization"
+        },
+        "invariant": "guest-cannot-read-private-record"
+      }
+    }
+  ]
+}

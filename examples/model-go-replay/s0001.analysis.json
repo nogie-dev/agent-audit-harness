@@ -1,0 +1,15 @@
+{
+  "candidates": [],
+  "requests": [
+    {
+      "operation": "resolve",
+      "reason": "Inspect the wrapper definition before declaring target vocabulary.",
+      "selector": "audit.example/models/protocol.ReadField"
+    },
+    {
+      "operation": "resolve",
+      "reason": "Inspect the wrapper definition before declaring target vocabulary.",
+      "selector": "audit.example/models/command.Send"
+    }
+  ]
+}

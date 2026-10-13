@@ -40,6 +40,11 @@ def run_tool(
                         os.killpg(process.pid, signal.SIGKILL)
                     except ProcessLookupError:
                         pass
+                    except PermissionError as error:
+                        try:
+                            process.wait(timeout=0.1)
+                        except subprocess.TimeoutExpired as timeout_error:
+                            raise error from timeout_error
                     process.wait()
         with log_path.open("rb") as stream:
             diagnostics = stream.read(64_000).decode("utf-8", errors="replace")

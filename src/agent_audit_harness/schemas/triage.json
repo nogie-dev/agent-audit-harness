@@ -2,19 +2,202 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["decisions"],
+  "required": [
+    "groups"
+  ],
   "properties": {
-    "decisions": {
+    "groups": {
       "type": "array",
       "maxItems": 8,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["candidate_id", "verdict", "rationale"],
+        "required": [
+          "root_cause",
+          "decisions"
+        ],
         "properties": {
-          "candidate_id": {"type": "string", "pattern": "^f-[0-9a-f]{16}$"},
-          "verdict": {"type": "string", "enum": ["needs_validation", "uncertain", "rejected"]},
-          "rationale": {"type": "string", "minLength": 1, "maxLength": 3000}
+          "root_cause": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/cause"
+              }
+            ]
+          },
+          "decisions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/$defs/decision"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "line",
+        "column",
+        "quote"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        }
+      }
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 120
+    },
+    "cause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invariant",
+        "description",
+        "evidence",
+        "fix"
+      ],
+      "properties": {
+        "invariant": {
+          "$ref": "#/$defs/label"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "fix": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy",
+            "description",
+            "evidence"
+          ],
+          "properties": {
+            "strategy": {
+              "$ref": "#/$defs/label"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 3000
+            },
+            "evidence": {
+              "$ref": "#/$defs/evidence"
+            }
+          }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "verdict",
+        "rationale",
+        "counterevidence",
+        "unresolved"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "pattern": "^f-[0-9a-f]{16}$"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "needs_validation",
+            "uncertain",
+            "rejected"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "counterevidence": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim",
+              "evidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 3000
+              },
+              "evidence": {
+                "$ref": "#/$defs/evidence"
+              }
+            }
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim",
+              "evidence"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 3000
+              },
+              "evidence": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/$defs/evidence"
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

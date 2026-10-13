@@ -108,6 +108,39 @@ def test_external_library_contract_self_and_low_level_boundaries(graph_file):
     assert all(c["provenance"] == "solc_ast" for c in graph["calls"])
 
 
+def test_direct_parameter_facts_do_not_resolve_external_or_virtual_calls(graph_file):
+    graph = read_graph(graph_file)
+    helper = next(
+        call
+        for call in graph["calls"]
+        if call["callee_name"] == "Base.sol:Base.helper"
+        and call["caller"]
+        == next(node["id"] for node in graph["functions"] if node["name"] == "entry")
+    )
+    assert helper["status"] == "resolved" and helper["dispatch"] == "direct"
+    assert helper["metadata"]["argument_origins"] == [
+        {"argument_index": 0, "kind": "parameter", "parameter_index": 2}
+    ]
+    assert helper["metadata"]["argument_transfers"][0]["parameter_name"] == "n"
+    assert helper["metadata"]["argument_transfers"][0]["expression"] == "n"
+    bump = next(call for call in graph["calls"] if call["callee_name"] == "Ops.sol:Ops.bump")
+    assert bump["metadata"]["argument_transfers"][0]["expression"] == "helper(n)"
+    assert bump["metadata"]["argument_origins"] == [
+        {"argument_index": 0, "kind": "unknown", "reason": "unsupported_expression"}
+    ]
+    assert all(
+        "argument_transfers" not in call["metadata"]
+        for call in graph["calls"]
+        if call["status"] != "resolved" or call["dispatch"] != "direct"
+    )
+    changed = copy.deepcopy(graph)
+    next(call for call in changed["calls"] if call["id"] == helper["id"])["metadata"][
+        "argument_transfers"
+    ][0]["parameter_name"] = "invented"
+    with pytest.raises(ValueError, match="argument transfer"):
+        validate_graph(changed)
+
+
 def test_virtual_super_and_function_values_do_not_invent_edges(graph_file):
     graph = read_graph(graph_file)
     virtual = reachable(graph, "invokeVirtual")
@@ -128,13 +161,16 @@ def test_solidity_graph_recon_multifile_slicing_replay_resume_and_cli(graph_file
     recon = build_recon(FIXTURE, graph_file, spec_file, tmp_path / "recon")
     graph = read_graph(graph_file)
     sources, _ = index_target(FIXTURE)
-    slices, gaps = make_graph_slices(graph, recon, sources, 16000)
+    slices, gaps = make_graph_slices(graph, recon, sources, 24000)
     assert not gaps and len(slices) == 1
     text = "\n".join(f["text"] for f in slices[0]["fragments"])
     assert 'require(msg.sender == owner, "owner")' in text and "address public owner" in text
     assert "function bump" in text and "contract Wallet is Base" in text
     assert any(c["dispatch"] == "low_level" for c in slices[0]["calls"])
-    assert len(encode(slices[0]).encode()) <= 16000
+    assert len(encode(slices[0]).encode()) <= 24000
+    assert slices[0]["modifier_flows"][0]["flow"]["body_execution"]["min"] == 1
+    bounded, bounded_gaps = make_graph_slices(graph, recon, sources, 16000)
+    assert bounded_gaps and len(encode(bounded[0]).encode()) <= 16000
     replay = tmp_path / "replay"
     replay.mkdir()
     external = next(c for c in slices[0]["calls"] if c["callee_name"] == "ITarget.sol:ITarget.ping")
@@ -156,17 +192,30 @@ def test_solidity_graph_recon_multifile_slicing_replay_resume_and_cli(graph_file
     (replay / "s0001.triage.json").write_text(
         encode(
             {
-                "decisions": [
+                "groups": [
                     {
-                        "candidate_id": candidate["id"],
-                        "verdict": "uncertain",
-                        "rationale": "Declaration known; runtime binding unknown.",
+                        "root_cause": None,
+                        "decisions": [
+                            {
+                                "candidate_id": candidate["id"],
+                                "verdict": "uncertain",
+                                "counterevidence": [],
+                                "unresolved": [
+                                    {"claim": "Runtime binding is unknown.", "evidence": None}
+                                ],
+                                "rationale": "Declaration known; runtime binding unknown.",
+                            }
+                        ],
                     }
                 ]
             }
         )
     )
-    options = {"graph_file": graph_file, "recon_file": tmp_path / "recon/recon.json"}
+    options = {
+        "graph_file": graph_file,
+        "recon_file": tmp_path / "recon/recon.json",
+        "slice_bytes": 24000,
+    }
     first = run_pipeline(FIXTURE, tmp_path / "run", ReplayAgent(replay), **options)
     resumed = run_pipeline(FIXTURE, tmp_path / "run", ReplayAgent(replay), resume=True, **options)
     assert first["call_attempts"] == resumed["call_attempts"] == resumed["cache_hits"] == 2

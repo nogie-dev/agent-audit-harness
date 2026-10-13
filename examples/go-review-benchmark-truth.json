@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "raw-executable-selection",
+      "path": "runner/execute.go",
+      "line": 6,
+      "quote": "_ = exec.Command(program).Run()",
+      "cwe": "CWE-78",
+      "expected": "positive",
+      "rationale": "The fixture Raw path forwards query-selected Program to Execute without its Checked path allowlist; deployment reachability remains a hypothesis."
+    },
+    {
+      "id": "checked-allowlist-control",
+      "path": "service/flow.go",
+      "line": 16,
+      "quote": "runner.Execute(req.Program)",
+      "cwe": "CWE-78",
+      "expected": "negative",
+      "rationale": "The fixture Checked path returns unless the program equals the allowed literal before dispatch."
+    }
+  ]
+}

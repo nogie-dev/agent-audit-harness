@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "request-selected-export",
+      "entry": "audit.example/exporter/web.Download",
+      "question": "Can a request select the private fixture file through the registered download route?",
+      "assumptions": ["HTTP registration and direct calls do not prove live request delivery or file readability."],
+      "annotations": [
+        {
+          "role": "source",
+          "function": "audit.example/exporter/web.Download",
+          "claim": "The asset query parameter supplies the file name.",
+          "evidence": {"path": "web/download.go", "line": 12, "quote": "r.URL.Query().Get(\"asset\")"}
+        },
+        {
+          "role": "sink",
+          "function": "audit.example/exporter/storage.Open",
+          "claim": "The selected name reaches the file-opening operation.",
+          "evidence": {"path": "storage/files.go", "line": 6, "quote": "os.ReadFile(key)"}
+        }
+      ]
+    }
+  ]
+}

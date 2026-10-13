@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hypotheses": [
+    {
+      "id": "selected-file",
+      "entry": "api.selected",
+      "question": "Can the supplied name select the file read across the module call?",
+      "assumptions": ["Caller control and filesystem permissions are not demonstrated."],
+      "annotations": []
+    },
+    {
+      "id": "public-file-control",
+      "entry": "api.public",
+      "question": "Does the supplied name affect the fixed public file read?",
+      "assumptions": ["This path is a negative control for externally selected filenames."],
+      "annotations": []
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/packages"
@@ -32,6 +33,9 @@ type extractor struct {
 	objects      map[types.Object]string
 	preambles    map[*ast.File]string
 	declarations map[*ast.GenDecl][]row
+	contents     map[string][]byte
+	bodies       map[string]*ast.BlockStmt
+	signatures   map[string]*types.Signature
 }
 
 func identity(parts ...string) string {
@@ -177,6 +181,165 @@ func (e *extractor) functionArgument(pkg *packages.Package, expr ast.Expr, index
 	return row{"index": index, "function": id, "name": name, "status": status, "reason": reason}
 }
 
+func (e *extractor) argumentTransfers(pkg *packages.Package, call *ast.CallExpr, object types.Object) ([]row, string) {
+	if fn, ok := object.(*types.Func); ok {
+		declared := fn.Type().(*types.Signature)
+		if declared.Recv() != nil || declared.TypeParams().Len() != 0 {
+			return nil, "unsupported_signature_or_arity"
+		}
+	}
+	sig, ok := pkg.TypesInfo.TypeOf(call.Fun).(*types.Signature)
+	if !ok || sig.Recv() != nil || sig.Variadic() || len(call.Args) != sig.Params().Len() {
+		return nil, "unsupported_signature_or_arity"
+	}
+	transfers := []row{}
+	for index, argument := range call.Args {
+		path, start := e.location(pkg, argument.Pos())
+		end := pkg.Fset.PositionFor(argument.End(), false)
+		if end.Filename != start.Filename || end.Offset < start.Offset || end.Offset-start.Offset > 256 {
+			return nil, "argument_expression_outside_limit"
+		}
+		content, found := e.contents[path]
+		if !found {
+			var err error
+			content, err = os.ReadFile(filepath.Join(e.root, path))
+			if err != nil {
+				return nil, "argument_source_unavailable"
+			}
+			e.contents[path] = content
+		}
+		if end.Offset > len(content) || !utf8.Valid(content[start.Offset:end.Offset]) {
+			return nil, "argument_source_unavailable"
+		}
+		kind := "expression"
+		if pkg.TypesInfo.Types[argument].Value != nil {
+			kind = "constant"
+		} else if _, ok := unwrap(argument).(*ast.Ident); ok {
+			kind = "identifier"
+		}
+		param := sig.Params().At(index)
+		sum := sha256.Sum256(content)
+		transfers = append(transfers, row{
+			"argument_index": index, "parameter_index": index,
+			"parameter_name": param.Name(), "parameter_type": types.TypeString(param.Type(), qualifier),
+			"path": path, "line": start.Line, "column": start.Column,
+			"end_line": end.Line, "end_column": end.Column,
+			"expression": string(content[start.Offset:end.Offset]), "kind": kind,
+			"source_sha256": hex.EncodeToString(sum[:]),
+		})
+	}
+	return transfers, ""
+}
+
+func (e *extractor) argumentOrigins(pkg *packages.Package, owner string, call *ast.CallExpr) []row {
+	body := e.bodies[owner]
+	sig := e.signatures[owner]
+	result := []row{}
+	if body == nil || sig == nil {
+		return result
+	}
+	position := -1
+	for index, stmt := range body.List {
+		if stmt.Pos() <= call.Pos() && call.End() <= stmt.End() {
+			position = index
+			break
+		}
+	}
+	straight := position >= 0
+	if straight {
+		switch body.List[position].(type) {
+		case *ast.AssignStmt, *ast.ExprStmt, *ast.ReturnStmt:
+		default:
+			straight = false
+		}
+		for _, stmt := range body.List[:position] {
+			switch stmt.(type) {
+			case *ast.AssignStmt, *ast.DeclStmt, *ast.ExprStmt:
+			default:
+				straight = false
+			}
+		}
+	}
+	for index, argument := range call.Args {
+		origin := row{"argument_index": index, "kind": "unknown", "reason": "unsupported_expression"}
+		typ := pkg.TypesInfo.TypeOf(argument)
+		if pkg.TypesInfo.Types[argument].Value != nil {
+			origin = row{"argument_index": index, "kind": "constant"}
+		} else if typ == nil {
+			origin["reason"] = "unsupported_expression"
+		} else if _, ok := types.Unalias(typ).Underlying().(*types.Basic); !ok {
+			origin["reason"] = "mutable_or_unsupported_type"
+		} else if !straight {
+			origin["reason"] = "conditional_or_prior_control"
+		} else if source, ok := unwrap(argument).(*ast.CallExpr); ok {
+			if !pkg.TypesInfo.Types[source.Fun].IsType() {
+				path, start := e.location(pkg, source.Pos())
+				_, end := e.location(pkg, source.End())
+				origin = row{"argument_index": index, "kind": "call_result", "path": path,
+					"line": start.Line, "column": start.Column,
+					"end_line": end.Line, "end_column": end.Column}
+			}
+		} else if ident, ok := unwrap(argument).(*ast.Ident); ok {
+			object := pkg.TypesInfo.Uses[ident]
+			escaped := false
+			for _, stmt := range body.List[:position] {
+				ast.Inspect(stmt, func(node ast.Node) bool {
+					if _, ok := node.(*ast.FuncLit); ok {
+						escaped = true
+						return false
+					}
+					if address, ok := node.(*ast.UnaryExpr); ok && address.Op == token.AND {
+						if name, ok := unwrap(address.X).(*ast.Ident); ok && pkg.TypesInfo.Uses[name] == object {
+							escaped = true
+						}
+					}
+					return true
+				})
+			}
+			for paramIndex := 0; paramIndex < sig.Params().Len(); paramIndex++ {
+				if object == sig.Params().At(paramIndex) {
+					origin = row{"argument_index": index, "kind": "parameter", "parameter_index": paramIndex}
+				}
+			}
+			writes := 0
+			var initializer ast.Expr
+			for _, stmt := range body.List[:position] {
+				assignment, ok := stmt.(*ast.AssignStmt)
+				if !ok {
+					continue
+				}
+				for i, lhs := range assignment.Lhs {
+					name, ok := lhs.(*ast.Ident)
+					if !ok || (pkg.TypesInfo.Defs[name] != object && pkg.TypesInfo.Uses[name] != object) {
+						continue
+					}
+					writes++
+					if len(assignment.Lhs) == len(assignment.Rhs) {
+						initializer = assignment.Rhs[i]
+					}
+				}
+			}
+			if writes != 0 {
+				origin = row{"argument_index": index, "kind": "unknown", "reason": "reassigned_or_unsupported_binding"}
+				if writes == 1 {
+					if source, ok := unwrap(initializer).(*ast.CallExpr); ok && !pkg.TypesInfo.Types[source.Fun].IsType() {
+						path, start := e.location(pkg, source.Pos())
+						_, end := e.location(pkg, source.End())
+						origin = row{"argument_index": index, "kind": "call_result", "path": path,
+							"line": start.Line, "column": start.Column,
+							"end_line": end.Line, "end_column": end.Column}
+					}
+				}
+			}
+			if escaped {
+				origin = row{"argument_index": index, "kind": "unknown", "reason": "address_escape_or_closure"}
+			}
+		}
+		result = append(result, origin)
+	}
+	return result
+}
+
 func (e *extractor) call(pkg *packages.Package, caller string, call *ast.CallExpr, execution string) {
 	// Conversions are expressions; their argument calls are still visited.
 	if pkg.TypesInfo.Types[call.Fun].IsType() {
@@ -236,6 +399,22 @@ func (e *extractor) call(pkg *packages.Package, caller string, call *ast.CallExp
 			}
 		}
 	}
+	metadata := row{}
+	_, callEnd := e.location(pkg, call.End())
+	metadata["call_end_line"], metadata["call_end_column"] = callEnd.Line, callEnd.Column
+	if execution == "normal" && len(call.Args) > 0 && (dispatch == "direct" || dispatch == "builtin") {
+		metadata["argument_origins"] = e.argumentOrigins(pkg, caller, call)
+	}
+	if status == "resolved" && dispatch == "direct" {
+		transfers, gap := e.argumentTransfers(pkg, call, object)
+		if transfers == nil {
+			transfers = []row{}
+		}
+		metadata["argument_transfers"] = transfers
+		if gap != "" {
+			metadata["argument_transfer_gap"] = gap
+		}
+	}
 	e.calls = append(e.calls, row{
 		"id":       identity(caller, path, fmt.Sprint(position.Offset), name, status, execution),
 		"language": "go", "caller": caller, "callee": callee, "callee_name": name,
@@ -243,6 +422,7 @@ func (e *extractor) call(pkg *packages.Package, caller string, call *ast.CallExp
 		"kind": "call", "dispatch": dispatch, "execution": execution,
 		"status": status, "reason": reason, "provenance": "go_types",
 		"function_arguments": arguments,
+		"metadata":           metadata,
 	})
 }
 
@@ -298,7 +478,9 @@ func extract(root string) (row, error) {
 	sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].PkgPath < pkgs[j].PkgPath })
 	e := extractor{root: root, functions: []row{}, calls: []row{}, symbols: map[string][]string{},
 		literals: map[*ast.FuncLit]string{}, owners: map[*ast.FuncDecl]string{}, contexts: []row{},
-		objects: map[types.Object]string{}, preambles: map[*ast.File]string{}, declarations: map[*ast.GenDecl][]row{}}
+		objects: map[types.Object]string{}, preambles: map[*ast.File]string{}, declarations: map[*ast.GenDecl][]row{},
+		contents: map[string][]byte{}, bodies: map[string]*ast.BlockStmt{},
+		signatures: map[string]*types.Signature{}}
 	units := []row{}
 	valid := []*packages.Package{}
 	for _, pkg := range pkgs {
@@ -402,6 +584,7 @@ func extract(root string) (row, error) {
 					kind = "method"
 				}
 				id := e.definition(pkg, fn, object.Name(), name, kind, sig)
+				e.bodies[id], e.signatures[id] = fn.Body, sig
 				e.functions[len(e.functions)-1]["context_ids"] = e.references(pkg, fn, e.preambles[file])
 				e.owners[fn] = id
 				e.symbols[key] = append(e.symbols[key], id)
@@ -411,6 +594,8 @@ func extract(root string) (row, error) {
 						name := fmt.Sprintf("<literal@%s:%d:%d>", path, position.Line, position.Column)
 						e.literals[lit] = e.definition(pkg, lit, name, pkg.PkgPath+"."+name,
 							"lambda", pkg.TypesInfo.TypeOf(lit).(*types.Signature))
+						e.bodies[e.literals[lit]] = lit.Body
+						e.signatures[e.literals[lit]] = pkg.TypesInfo.TypeOf(lit).(*types.Signature)
 						e.functions[len(e.functions)-1]["context_ids"] = e.references(pkg, lit, e.preambles[file])
 					}
 					return true

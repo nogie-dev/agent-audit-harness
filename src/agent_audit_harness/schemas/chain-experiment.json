@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "first_entrypoint_source", "observations", "harness", "resolve_unresolved", "resolve_prerequisites"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "first_entrypoint_source": {"$ref": "#/$defs/evidence"},
+    "observations": {
+      "type": "object", "additionalProperties": false,
+      "required": ["first_entrypoint", "producer_prefix", "consumer_prefix", "control_denied"],
+      "properties": {
+        "first_entrypoint": {"$ref": "#/$defs/observation"},
+        "producer_prefix": {"$ref": "#/$defs/prefix"},
+        "consumer_prefix": {"$ref": "#/$defs/prefix"},
+        "control_denied": {"$ref": "#/$defs/observation"}
+      }
+    },
+    "harness": {
+      "type": "object", "additionalProperties": false,
+      "required": ["first_invocation", "capture", "producer_record", "consumer_record", "second_invocation", "control_invocation", "control_record"],
+      "properties": {
+        "first_invocation": {"$ref": "#/$defs/evidence"},
+        "capture": {"$ref": "#/$defs/evidence"},
+        "producer_record": {"$ref": "#/$defs/evidence"},
+        "consumer_record": {"$ref": "#/$defs/evidence"},
+        "second_invocation": {"$ref": "#/$defs/evidence"},
+        "control_invocation": {"$ref": "#/$defs/evidence"},
+        "control_record": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "resolve_unresolved": {
+      "type": "array", "maxItems": 32,
+      "items": {"$ref": "#/$defs/resolution"}
+    },
+    "resolve_prerequisites": {
+      "type": "array", "maxItems": 16,
+      "items": {"$ref": "#/$defs/resolution"}
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stream", "line"],
+      "properties": {
+        "stream": {"enum": ["stdout", "stderr"]},
+        "line": {"type": "string", "minLength": 1, "maxLength": 2000, "pattern": "^[^\\r\\n\\u0000]+$"}
+      }
+    },
+    "prefix": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stream", "prefix"],
+      "properties": {
+        "stream": {"enum": ["stdout", "stderr"]},
+        "prefix": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[^\\r\\n\\u0000]+$"}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "line", "column", "quote"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "line": {"type": "integer", "minimum": 1},
+        "column": {"type": "integer", "minimum": 1},
+        "quote": {"type": "string", "minLength": 1, "maxLength": 3000}
+      }
+    },
+    "resolution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["index", "rationale"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 0},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 2000}
+      }
+    }
+  }
+}
